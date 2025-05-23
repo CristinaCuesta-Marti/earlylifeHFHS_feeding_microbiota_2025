@@ -1,0 +1,11 @@
+"Sex","Legend","name","n","G","U","grubbs","p_grubbs"
+"M","HFHS Vehicle","Testicles_BW",6,1.88,0.148,"lowest value 0.00659 is an outlier",0.0261
+"M","HFHS 1472","Testicles",6,1.84,0.19,"lowest value 0.1644 is an outlier",0.0434
+"M","HFHS 1472","Testicles_BW",6,1.8,0.222,"highest value 0.00786 is an outlier",0.0601
+"M","Control Vehicle","Testicles_BW",6,1.67,0.33,"highest value 0.00756 is an outlier",0.139
+"M","Control Vehicle","Testicles",6,1.54,0.428,"lowest value 0.1483 is an outlier",0.245
+"M","HFHS Vehicle","Testicles",6,1.46,0.49,"highest value 0.2114 is an outlier",0.333
+"M","HFHS FOS+GOS","Testicles_BW",7,1.47,0.583,"highest value 0.00763 is an outlier",0.409
+"M","HFHS FOS+GOS","Testicles",7,1.22,0.712,"highest value 0.2052 is an outlier",0.75
+"",NA,"Testicles",0,NA,NA,NA,NA
+"",NA,"Testicles_BW",0,NA,NA,NA,NA

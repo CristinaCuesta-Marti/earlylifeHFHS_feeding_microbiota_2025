@@ -1,0 +1,17 @@
+"Sex","Legend","name","n","G","U","grubbs","p_grubbs"
+"F","HFHS FOS+GOS","real_intake",12,3.1,0.0452,"highest value 6.6 is an outlier",2.85e-07
+"F","HFHS 1472","crumbling",13,3.19,0.0786,"highest value 6.3 is an outlier",1.34e-06
+"M","HFHS Vehicle","real_intake",10,2.77,0.054,"highest value 7.38 is an outlier",1.19e-05
+"M","HFHS FOS+GOS","crumbling",13,3.03,0.173,"highest value 15.9 is an outlier",0.000107
+"M","HFHS Vehicle","crumbling",12,2.68,0.289,"highest value 24.1 is an outlier",0.00344
+"F","HFHS Vehicle","real_intake",10,2.38,0.3,"highest value 7.82 is an outlier",0.0127
+"M","HFHS 1472","real_intake",9,2.22,0.309,"highest value 2.66 is an outlier",0.0248
+"M","Control Vehicle","crumbling",12,2.39,0.431,"highest value 10.5 is an outlier",0.0276
+"F","HFHS FOS+GOS","crumbling",12,2.26,0.493,"highest value 4.5 is an outlier",0.0564
+"F","Control Vehicle","real_intake",11,2.17,0.48,"highest value 2.84 is an outlier",0.0678
+"M","HFHS FOS+GOS","real_intake",13,1.96,0.653,"lowest value 0.78 is an outlier",0.222
+"M","Control Vehicle","real_intake",10,1.82,0.589,"highest value 3.12 is an outlier",0.229
+"F","HFHS Vehicle","crumbling",12,1.87,0.652,"highest value 8.1 is an outlier",0.262
+"M","HFHS 1472","crumbling",12,1.71,0.71,"highest value 3.6 is an outlier",0.427
+"F","HFHS 1472","real_intake",13,1.71,0.735,"highest value 2.44 is an outlier",0.468
+"F","Control Vehicle","crumbling",12,1.54,0.764,"highest value 1.9 is an outlier",0.659

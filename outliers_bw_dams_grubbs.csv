@@ -1,0 +1,17 @@
+"Legend","name","n","G","U","grubbs","p_grubbs"
+"HFHS FOS+GOS","PND14",7,2.1,0.145,"lowest value 22.4 is an outlier",0.0101
+"HFHS 1472","PND0",7,2.03,0.198,"highest value 28.2 is an outlier",0.0224
+"HFHS 1472","PND14",7,1.97,0.244,"highest value 32.3 is an outlier",0.0383
+"HFHS Vehicle","PND21",7,1.89,0.304,"lowest value 22.9 is an outlier",0.0685
+"HFHS 1472","PND7",7,1.8,0.37,"highest value 30.2 is an outlier",0.115
+"HFHS 1472","PND21",7,1.75,0.406,"lowest value 20.1 is an outlier",0.149
+"HFHS Vehicle","PND0",7,1.72,0.424,"highest value 28.8 is an outlier",0.168
+"Control Vehicle","PND0",7,1.67,0.455,"highest value 31.3 is an outlier",0.203
+"HFHS FOS+GOS","PND7",7,1.63,0.485,"highest value 32.5 is an outlier",0.243
+"HFHS FOS+GOS","PND0",7,1.61,0.496,"lowest value 23 is an outlier",0.259
+"HFHS FOS+GOS","PND21",7,1.6,0.504,"highest value 34.4 is an outlier",0.271
+"Control Vehicle","PND14",7,1.54,0.539,"lowest value 20.5 is an outlier",0.327
+"Control Vehicle","PND7",7,1.51,0.555,"lowest value 23.3 is an outlier",0.355
+"Control Vehicle","PND21",7,1.49,0.566,"lowest value 20.7 is an outlier",0.377
+"HFHS Vehicle","PND14",7,1.4,0.618,"highest value 35.2 is an outlier",0.486
+"HFHS Vehicle","PND7",7,1.37,0.634,"highest value 30 is an outlier",0.525
