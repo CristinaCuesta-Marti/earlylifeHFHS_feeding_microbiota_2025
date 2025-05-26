@@ -1,0 +1,414 @@
+#Load packages---
+library(openxlsx)         #install.packages("openxlsx")
+library(ggplot2)          #install.packages("ggplot2")
+library(ggforce)          #install.packages("ggforce")
+library(patchwork)        #install.packages("patchwork")
+library(metafolio)        #install.packages("metafolio")
+library(broom)            #install.packages("broom")
+library(broom.mixed)      #install.packages("broom.mixed")
+library(tidyverse)        #install.packages("tidyverse")
+library(stringr)          #install.packages("stringr")
+library(forcats)          #install.packages("forcats")
+library(svglite)          #install.packages("svglite")
+
+
+
+#Plotting Figure 1B----
+
+tidy_data_wk10_pups <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/tidy_data_wk10_pups.csv")
+
+FPT_wk10_48h <- tidy_data_wk10_pups %>%
+  #mutate(Age = factor(Age, levels = c("PND70"))) %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Age, Legend)) %>%
+  filter(!(name %in% c("TotalIntake.g.", "NumberMeals", "AverageMealSize.g.", "AverageMealDuration.g.", "IntervalBtwMeals.min.", "EatingRate",
+                       "LatencyFirstMeal", "FirstMealSize", "FaecalPellets", "LocomotorActivity.12h.", "Rears.12h.",
+                       "Rearing_Centre", "Rearing_ExternalZone10.", "Rearing_ExternalZone20.", "CentreTime.", "TimeThigmotaxis.10..", "TimeThigmotaxis.20..",
+                       "CentreDistance.", "DistanceThigmotaxis.10..", "DistanceThigmotaxis.20.."))) %>%
+  #filter(Age == "PND70") %>% 
+  filter(!name %in% c("BW.g.")) %>%
+  #filter(!str_detect(name, "Testicles")) %>%
+  filter(str_detect(name, "FPT_TotalCumulative_CTDiet|FPT_TotalCumulative_HFHSDiet")) %>%
+  mutate(Time = as.numeric(str_extract(name, "\\d{1,2}(?=h)")),
+         Group = paste(Legend, str_extract(name, "CTDiet|HFHSDiet"), sep = " - ")) %>%
+  mutate(Time = factor(Time, levels = c(0, 12, 24, 36, 48))) %>%
+  mutate(name = case_when(
+    name == "FPT_TotalCumulative_CTDiet_0h" ~ "0h",
+    name == "FPT_TotalCumulative_CTDiet_12h" ~ "12h",
+    name == "FPT_TotalCumulative_CTDiet_24h" ~ "24h",
+    name == "FPT_TotalCumulative_CTDiet_36h" ~ "36h",
+    name == "FPT_TotalCumulative_CTDiet_48h" ~ "48h",
+    name == "FPT_TotalCumulative_HFHSDiet_0h" ~ "0h",
+    name == "FPT_TotalCumulative_HFHSDiet_12h" ~ "12h",
+    name == "FPT_TotalCumulative_HFHSDiet_24h" ~ "24h",
+    name == "FPT_TotalCumulative_HFHSDiet_36h" ~ "36h",
+    name == "FPT_TotalCumulative_HFHSDiet_48h" ~ "48h",
+    TRUE ~ name))
+
+summary_FPT_wk10_48h <- FPT_wk10_48h %>%
+  group_by(Time, Group, Sex) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE),
+            sem_value = sd(value, na.rm = TRUE) / sqrt(n())) %>%
+  ungroup()
+
+summary_FPT_wk10_48h$Group <- factor(summary_FPT_wk10_48h$Group,
+                                                 levels = c("Control Vehicle - CTDiet",
+                                                            "HFHS Vehicle - CTDiet",
+                                                            "HFHS FOS+GOS - CTDiet",
+                                                            "HFHS B. longum APC1472 - CTDiet",
+                                                            "Control Vehicle - HFHSDiet",
+                                                            "HFHS Vehicle - HFHSDiet",
+                                                            "HFHS FOS+GOS - HFHSDiet",
+                                                            "HFHS B. longum APC1472 - HFHSDiet"))
+
+figure1b <- ggplot(summary_FPT_wk10_48h, aes(x = as.numeric(as.character(Time)), y = mean_value, colour = Group, group = Group)) +
+  # Add grey transparent rectangles
+  annotate("rect", xmin = 0, xmax = 12, ymin = -Inf, ymax = Inf, fill = "grey", alpha = 0.2) +
+  annotate("rect", xmin = 24, xmax = 36, ymin = -Inf, ymax = Inf, fill = "grey", alpha = 0.2) +
+  
+  geom_line(aes(linetype = Group), size = 1) +
+  geom_point(data = subset(summary_FPT_wk10_48h, str_detect(Group, "CTDiet")), size = 4, shape = 21, fill = "black") +
+  geom_point(data = subset(summary_FPT_wk10_48h, str_detect(Group, "HFHSDiet")), size = 4, shape = 21, fill = "white") +    
+  geom_errorbar(aes(ymin = mean_value - sem_value, ymax = mean_value + sem_value), width = 0.25) +
+  
+  scale_fill_manual(values = c("Control Vehicle - CTDiet" = "#a0a0a4",
+                               "HFHS Vehicle - CTDiet"    = "#f94040",
+                               "HFHS FOS+GOS - CTDiet"    = "#addead",
+                               "HFHS B. longum APC1472 - CTDiet" = "#e1c180",
+                               "Control Vehicle - HFHSDiet" = "#a0a0a4",
+                               "HFHS Vehicle - HFHSDiet"    = "#f94040",
+                               "HFHS FOS+GOS - HFHSDiet"    = "#addead",
+                               "HFHS B. longum APC1472 - HFHSDiet" = "#e1c180"), 
+                    labels = c("Control Vehicle - Non Palatable Diet",
+                               "HFHS Vehicle - Non Palatable Diet",
+                               "HFHS FOS+GOS - Non Palatable Diet",
+                               "HFHS B. longum APC1472 - Non Palatable Diet",
+                               "Control Vehicle - Palatable Diet",
+                               "HFHS Vehicle - Palatable Diet",
+                               "HFHS FOS+GOS - Palatable Diet",
+                               "HFHS B. longum APC1472 - Palatable Diet")) +
+  scale_colour_manual(values = c("Control Vehicle - CTDiet" = "#a0a0a4",
+                                 "HFHS Vehicle - CTDiet"    = "#f94040",
+                                 "HFHS FOS+GOS - CTDiet"    = "#addead",
+                                 "HFHS B. longum APC1472 - CTDiet" = "#e1c180",
+                                 "Control Vehicle - HFHSDiet" = "#a0a0a4",
+                                 "HFHS Vehicle - HFHSDiet"    = "#f94040",
+                                 "HFHS FOS+GOS - HFHSDiet"    = "#addead",
+                                 "HFHS B. longum APC1472 - HFHSDiet" = "#e1c180"), 
+                      labels = c("Control Vehicle - Non Palatable Diet",
+                                 "HFHS Vehicle - Non Palatable Diet",
+                                 "HFHS FOS+GOS - Non Palatable Diet",
+                                 "HFHS B. longum APC1472 - Non Palatable Diet",
+                                 "Control Vehicle - Palatable Diet",
+                                 "HFHS Vehicle - Palatable Diet",
+                                 "HFHS FOS+GOS - Palatable Diet",
+                                 "HFHS B. longum APC1472 - Palatable Diet")) +
+  scale_linetype_manual(values = c("Control Vehicle - CTDiet" = "dashed",
+                                   "HFHS Vehicle - CTDiet"    = "dashed",
+                                   "HFHS FOS+GOS - CTDiet"    = "dashed",
+                                   "HFHS B. longum APC1472 - CTDiet" = "dashed",
+                                   "Control Vehicle - HFHSDiet" = "solid",
+                                   "HFHS Vehicle - HFHSDiet"    = "solid",
+                                   "HFHS FOS+GOS - HFHSDiet"    = "solid",
+                                   "HFHS B. longum APC1472 - HFHSDiet" = "solid")) +
+  scale_y_continuous(limits = c(0, 60)) +
+  theme_bw() +
+  facet_wrap(~Sex, scales = "fixed") +
+  scale_x_continuous(breaks = c(0, 12, 24, 36, 48)) +
+  ggtitle("Adulthood") +
+  xlab("Time (hours)") +
+  ylab("Cumulative Total Food Quantity (g)")
+
+
+print(FPT_wk10_48h_plot)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1B.svg", 
+       plot = FPT_wk10_48h_plot, 
+       device = "svg",
+       width = 12,
+       height = 6)
+
+
+#Plotting Figure 1C ----------
+
+real_foodintake_PheCOMP_wk10 = tidy_data_wk10_pups %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend)) %>%
+  filter(str_detect(name, "real_intake")) %>%
+  mutate(name = case_when(name == "real_intake" ~ "Intake of palatable diet (12h light phase)")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  # Bar width
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +  # Adjusted dodge width for points    
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  scale_y_continuous(limits = c(0, 10)) + 
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Intake of palatable diet substracting food crumbling (g)")
+
+print(real_foodintake_PheCOMP_wk10)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1C.svg", 
+       plot = real_foodintake_PheCOMP_wk10, 
+       device = "svg",
+       width = 7,
+       height = 5)
+
+
+# Plotting Figure 1D ----------
+
+foodcrumbling_PheCOMP_wk10 = tidy_data_wk10_pups %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend)) %>%
+  filter(str_detect(name, "crumbling")) %>%
+  mutate(name = case_when(name == "crumbling" ~ "Crumbling of palatable diet (12h light phase)")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  # Bar width
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +  # Adjusted dodge width for points    
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Food crumbs (g)")
+
+print(foodcrumbling_PheCOMP_wk10)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1D.svg", 
+       plot = foodcrumbling_PheCOMP_wk10, 
+       device = "svg",
+       width = 7,
+       height = 5)
+
+# Plotting Figure 1E ----------
+
+SPT_PS_Perc_Wk10 = tidy_data_wk10_pups %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS", "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>% 
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, 
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter(!str_detect(name, "Cumulative")) %>% 
+  filter(!str_detect(Mouse_ID, "202")) %>%
+  filter(str_detect(name, "SPT_PreferenceScore_Percentage")) %>% 
+  mutate(name = case_when(name == "SPT_PreferenceScore_Percentage" ~ "Saccharin Preference")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  
+           colour = "black") +
+  
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +  # Adjusted dodge width for points    
+  #geom_dotplot(dotsize = 1/3, binaxis = "y", stackdir = "center") +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  scale_y_continuous(limits = c(0, 100)) +
+  theme_bw() +xlab(NULL) +ylab("Preference Score in % (Saccharin intake/Total drink intake)")
+
+print(SPT_PS_Perc_Wk10)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1E.svg", 
+       plot = SPT_PS_Perc_Wk10, 
+       device = "svg",
+       width = 7,
+       height = 5)
+
+
+# Plotting Figure 1F ----------
+genus_relativeabundance_pup = readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/genus_relativeabundance_wk5_wk10_pups.xlsx")
+
+top10_genus_order <- c("Bacteroides", "Bifidobacterium", "Ligilactobacillus", "Alistipes", 
+                        "Akkermansia", "Lactobacillus", "Rikenellaceae RC9", 
+                        "Lachnospiraceae NK4A136", "Faecalibaculum", "Romboutsia")
+
+plot_abundant_genus_CT_HFHS_F_M_WK5_WK10pups = genus_relativeabundance_pup %>%
+  filter(legend %in% c("Control Vehicle", "HFHS Vehicle")) %>%
+  filter(Genus %in% top10_genus_order) %>%  
+  mutate(timepoint = factor(timepoint, levels = c("w5", "w10")),
+         Genus = factor(Genus, levels = rev(top10_genus_order)),
+         legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle"))) %>%
+  group_by(timepoint, sex, Genus, legend) %>%
+  summarise(
+    mean_abundance = mean(Abundance),
+    se = sd(Abundance)/sqrt(n()),
+    .groups = 'drop'
+  ) %>%
+  ggplot(aes(x = mean_abundance, y = Genus)) +
+  geom_errorbarh(aes(xmin = mean_abundance - se, 
+                     xmax = mean_abundance + se,
+                     color = legend),
+                 height = 0.2,
+                 position = position_dodge(width = -0.7)) +
+  geom_point(aes(color = legend),
+             size = 3,
+             position = position_dodge(width = -0.7)) +
+  scale_color_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                "HFHS Vehicle" = "#f94040")) +
+  facet_grid(timepoint ~ sex) +
+  xlim(0, 0.4) +
+  theme_bw() +
+  ylab(NULL) +
+  xlab("Relative abundance") +
+  theme(legend.position = "bottom",
+        legend.background = element_rect(colour = "black"),
+        panel.grid.minor = element_blank(),
+        panel.grid.major.y = element_blank(),
+        axis.text.y = element_text(face = "italic")) 
+
+print(plot_abundant_genus_CT_HFHS_F_M_WK5_WK10pups)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1F.svg", 
+       plot = plot_abundant_genus_CT_HFHS_F_M_WK5_WK10pups, 
+       device = "svg",
+       width = 10,
+       height = 6)
+
+
+#Plotting Figure1G------------
+
+Bif_plot_relativeabundance_wk5_wk10_pups = genus_relativeabundance_pup %>%
+  filter(Genus == "Bifidobacterium") %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472")),
+         timepoint = factor(timepoint, levels = c("w5", "w10"))) %>%
+  
+  ggplot(aes(x = sex, y = Abundance, fill = legend, colour = legend)) +
+
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  ylim(0, 0.28) +  
+  facet_wrap(~timepoint, scales = "fixed") +  
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Relative abundance Bifidobacterium genus")
+print(Bif_plot_relativeabundance_wk5_wk10_pups)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1G.svg", 
+       plot = Bif_plot_relativeabundance_wk5_wk10_pups, 
+       device = "svg",
+       width = 8,
+       height = 4)
+
+
+#Plotting Figure1H------------
+
+genus_relativeabundance_pups = readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/genus_relativeabundance_pups.xlsx")
+
+
+Bif_longum_plot_relativeabundance_wk5_wk10_pups = genus_relativeabundance_pups %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472")),
+         timepoint = factor(timepoint, levels = c("w5", "w10"))) %>%
+  
+  ggplot(aes(x = sex, y = Abundance, fill = legend, colour = legend)) +
+
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  #ylim(0, 0.28) +  # Add this line to set y-axis limits
+  facet_wrap(~timepoint, scales = "fixed") +  # Changed to "fixed" to maintain same scale
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Relative abundance")
+print(Bif_longum_plot_relativeabundance_wk5_wk10_pups)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure1H.svg", 
+       plot = Bif_longum_plot_relativeabundance_wk5_wk10_pups, 
+       device = "svg",
+       width = 8,
+       height = 4)
