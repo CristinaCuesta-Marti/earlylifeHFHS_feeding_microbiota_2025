@@ -1,0 +1,6 @@
+"","Total","Expected","Hits","Raw p","-log10(p)","Holm adjust","FDR","Impact"
+"Arginine and proline metabolism",36,0.069948,2,0.0015633,2.806,0.12507,0.12507,0.1907
+"Arginine biosynthesis",14,0.027202,1,0.026973,1.5691,1,1,0.07979
+"beta-Alanine metabolism",21,0.040803,1,0.040276,1.3949,1,1,0
+"Glutathione metabolism",28,0.054404,1,0.053458,1.272,1,1,0.00719
+"Pyrimidine metabolism",39,0.075777,1,0.073926,1.1312,1,1,0.03799

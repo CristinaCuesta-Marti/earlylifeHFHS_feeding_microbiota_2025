@@ -1,0 +1,5 @@
+"","total","expected","hits","Raw p","Holm p","FDR"
+"beta-Alanine metabolism",21,0.0273,1,0.0271,1,1
+"Glutathione metabolism",28,0.0364,1,0.0361,1,1
+"Arginine and proline metabolism",36,0.0468,1,0.0463,1,1
+"Tryptophan metabolism",41,0.0533,1,0.0526,1,1
