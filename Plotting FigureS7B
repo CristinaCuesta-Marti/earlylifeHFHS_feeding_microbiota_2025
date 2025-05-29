@@ -1,0 +1,62 @@
+# load packages -----------------------------------------------------------
+
+library(ggplot2)
+library(ggpubr)
+library(tidyverse)
+library(patchwork)
+
+
+#Plotting FigureS7B----------
+
+RNAscope_set1_metadata <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/RNAscope_set1_metadata.csv")
+
+
+expr_double_posit_cells_set1_wo_outliers = RNAscope_set1_wo_outliers %>%
+  mutate(legend = recode_factor(legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472")),
+         sex = as.factor(sex)) %>%
+  pivot_longer(!c(Mouse_ID, bregma, section, cage, sex, cohort, diet, treatment, legend)) %>%
+  filter((name  %in% c("Lepr_puncta_double_Lepr_Ghsr_cells", "Ghsr_puncta_double_Lepr_Ghsr_cells",
+                       "Lepr_puncta_double_Lepr_Pomc_cells", "Pomc_puncta_double_Lepr_Pomc_cells"))) %>%
+  
+  # Remove rows with NA or non-finite values
+  #filter(!is.na(value) & is.finite(value)) %>%
+  
+  mutate(name = case_when(name == "Ghsr_puncta_double_Lepr_Ghsr_cells" ~ "Average Ghsr mRNA in double Lepr+ Ghsr+ cells", 
+                          name == "Lepr_puncta_double_Lepr_Ghsr_cells" ~ "Average Lepr mRNA in double Lepr+ Ghsr+ cells",
+                          name == "Lepr_puncta_double_Lepr_Pomc_cells" ~ "Average Lepr mRNA in double Lepr+ Pomc+ cells",
+                          name == "Pomc_puncta_double_Lepr_Pomc_cells" ~ "Average Pomc mRNA in double Lepr+ Pomc+ cells")) %>%
+  
+  ggplot() + 
+  aes(x = sex, y = value, fill = legend, colour = legend) + 
+  geom_violin(trim = FALSE, alpha = 0.4, position = position_dodge(width = 0.8)) + 
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(position = position_jitterdodge(jitter.width = 0.15, dodge.width = 0.8), size = 1, alpha = 0.6) + 
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") + 
+  facet_wrap(~ name, scales = "free_y") + 
+  
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) + 
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) + 
+  
+  guides(fill = FALSE, col = FALSE) + 
+  theme() + 
+  xlab(NULL) + 
+  ylab("Expression/Cell Count") + 
+  scale_y_continuous(limits = c(3, NA))  # Set lower limit of y-axis to 3
+plot(expr_double_posit_cells_set1_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/FigureS7B.svg", 
+       plot = expr_double_posit_cells_set1_wo_outliers, 
+       device = "svg",
+       width = 13,
+       height = 6)
