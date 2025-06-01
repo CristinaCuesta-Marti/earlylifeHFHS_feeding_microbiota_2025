@@ -1,0 +1,588 @@
+library(tidyverse)
+library(dplyr)  
+library(ggplot2) 
+library(patchwork)
+library(ggrepel) 
+library(broom) 
+library(car)
+library(gridExtra)
+library(ggnewscale)  
+library(RColorBrewer)
+library(stringr)
+library(grid)
+library(gtable)
+
+
+#Load metadata---------
+
+semipolar_BINC <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/CMD00098_r1v1_semipolar_results.xlsx")
+metadata_metabolomics_BINC <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metadata_metabolomics_BINC.csv")
+
+#Load LOD for metabolites----------
+lod_semipolar_BINC <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/CMD00098_r1v1_semipolar_results.xlsx",
+                                        sheet = "LOD") %>% 
+  rename_with(tolower) %>% 
+  relocate(name) %>% 
+  mutate(name = gsub(x = name, pattern = " ", replacement = "_"))
+
+#Load only Annotation Level 1 and 2a ---------------
+semipolar_BINC_level1 <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/CMD00098_r1v1_semipolar_results.xlsx", 
+                                           sheet = "Annotation level 1") 
+
+semipolar_BINC_level2a <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/CMD00098_r1v1_semipolar_results.xlsx", 
+                                            sheet = "Annotation level 2a") 
+
+
+#Take into consideration the LOD for level 1 and 2a------------
+
+#Level 1
+
+clean_semipolar_BINC_level1 <- semipolar_BINC_level1 %>%
+  #tibble::rownames_to_column("ID") %>%
+  dplyr::as_tibble() %>%
+  tidyr::pivot_longer(cols = -ID,
+                      names_to = "name",
+                      values_to = "raw_abundance") %>%
+  dplyr::full_join(lod_semipolar_BINC, by = "name") %>%
+  dplyr::mutate(consider = raw_abundance > lod) %>%
+  dplyr::filter(consider) %>%
+  dplyr::select(ID, name, raw_abundance) %>%
+  tidyr::pivot_wider(id_cols = ID,
+                     names_from = "name",
+                     values_from = "raw_abundance",
+                     values_fill = list(raw_abundance = 0))
+clean_semipolar_BINC_level1 %>% colnames() %>% sort()
+
+
+#Level 2a
+
+clean_semipolar_BINC_level2a <- semipolar_BINC_level2a %>%
+  #tibble::rownames_to_column("ID") %>%
+  dplyr::as_tibble() %>%
+  tidyr::pivot_longer(cols = -ID,
+                      names_to = "name",
+                      values_to = "raw_abundance") %>%
+  dplyr::full_join(lod_semipolar_BINC, by = "name") %>%
+  dplyr::mutate(consider = raw_abundance > lod) %>%
+  dplyr::filter(consider) %>%
+  dplyr::select(ID, name, raw_abundance) %>%
+  tidyr::pivot_wider(id_cols = ID,
+                     names_from = "name",
+                     values_from = "raw_abundance",
+                     values_fill = list(raw_abundance = 0))
+clean_semipolar_BINC_level2a %>% colnames() %>% sort()
+
+
+#Join clean_semipolar_BINC_level1 and clean_semipolar_BINC_level2a----------------------------------
+
+clean_semipolar_BINC_level1_level2a <- inner_join(clean_semipolar_BINC_level1, clean_semipolar_BINC_level2a, by = "ID")
+
+clean_semipolar_BINC_level1_level2a <- round(clean_semipolar_BINC_level1_level2a, 0)
+
+
+#Remove metabolite not naturally produced in mice and not expected to be present for the study design----
+#Removing plant metabolites detected among annotation 1 and 2a: Bestatin, 6-Gingerol, Polygodial, Rosamultin, Veratridine, Deserpidine, Formylkynurenine, Coniferin, Polygodial, Oridonin, 12-Deoxywithastramonolide 
+
+plantmetabolites_to_remove <- c("3,4-Dimethoxyphenol", "3-Hydroxy-4-methoxyacetophenone", "Bestatin", 
+                                "6-Gingerol", "Polygodial", "Rosamultin", "Veratridine", 
+                                "Deserpidine", "Formylkynurenine", "Coniferin", "Oridonin", 
+                                "12-Deoxywithastramonolide")
+
+clean_semipolar_BINC_level1_level2a <- clean_semipolar_BINC_level1_level2a %>%
+  select(-all_of(plantmetabolites_to_remove))
+
+
+
+# CLR-tranformed data (relative abundance)---------------------------------------------------------------------
+
+clean_semipolar_BINC_level1_level2a_clr <- clean_semipolar_BINC_level1_level2a %>% 
+  column_to_rownames("ID") %>% 
+  t() %>% 
+  Tjazi::clr_c()
+
+#Merging clr data with metadata
+clean_semipolar_BINC_level1_level2a_clr_long = clean_semipolar_BINC_level1_level2a_clr %>%
+  tibble::rownames_to_column(var = "row_name") %>%  
+  pivot_longer(cols = -row_name,  
+               names_to = "ID", 
+               values_to = "raw_abundance") %>%
+  mutate(ID = as.character(ID)) %>%  
+  inner_join(metadata_metabolomics_BINC %>% mutate(ID = as.character(ID)), by = "ID")
+
+
+#Statistical analysis - Contrasts-metabolites significantly restored p.adj<0.05--------------------
+
+interaction_effects_contrasts_semipolar_BINC <- clean_semipolar_BINC_level1_level2a_clr_long %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(raw_abundance),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  mutate(treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(diet, levels = c("Control", "HFHS"))) %>% 
+  group_by(row_name) %>% 
+  nest() %>% 
+  mutate(lm = purrr::map(.x = data, 
+                         .f = ~lm(value ~ diet * treatment * sex, data = .x) %>% broom::tidy())) %>% 
+  select(!data) %>% 
+  unnest(lm) %>% 
+  filter(term != "(Intercept)" & !is.na(estimate)) %>% 
+  write.csv(x = ., 
+            file = "earlylifeHFHS_eating_microbiota_2025/outputs/interaction_effects_contrasts_semipolar_BINC.csv")
+
+#Restoration-
+
+# Diet contrasts
+diet_contrasts_semipolar_BINC_wk12 <- clean_semipolar_BINC_level1_level2a_clr_long %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(raw_abundance),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(treatment == "Vehicle") %>% 
+  group_by(row_name, sex) %>% 
+  nest() %>% 
+  mutate(diet_pwtt = purrr::map(.x = data, 
+                                .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                formula = value ~ diet,
+                                                                pool.sd = FALSE))) %>% 
+  unnest(diet_pwtt) %>%
+  select(-data) %>%  
+  mutate(comparison_type = "diet")
+
+# Treatment contrasts
+treatment_contrasts_semipolar_BINC_wk12 <- clean_semipolar_BINC_level1_level2a_clr_long %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(raw_abundance),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(diet == "HFHS") %>% 
+  group_by(row_name, sex) %>% 
+  nest() %>% 
+  mutate(treatment_pwtt = purrr::map(.x = data, 
+                                     .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                     formula = value ~ treatment,
+                                                                     pool.sd = FALSE))) %>% 
+  unnest(treatment_pwtt) %>%
+  select(-data) %>%  
+  mutate(comparison_type = "treatment")
+
+combined_diet_treatment_contrasts_semipolar_BINC_wk12 <- bind_rows(diet_contrasts_semipolar_BINC_wk12, treatment_contrasts_semipolar_BINC_wk12)
+
+write.csv(x = combined_diet_treatment_contrasts_semipolar_BINC_wk12, 
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/combined_diet_treatment_contrasts_semipolar_BINC_wk12.csv")
+
+#Restoration contrasts p.adj<0.05
+
+restoration_contrasts_semipolar_BINC_wk12_padj0.05 <- combined_diet_treatment_contrasts_semipolar_BINC_wk12 %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(row_name, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(x = restoration_contrasts_semipolar_BINC_wk12_padj0.05, 
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_semipolar_BINC_wk12_padj0.05.csv")
+
+#Statistical analysis - Contrasts-metabolites significantly restored p.adj<0.1--------------------
+
+restoration_contrasts_semipolar_BINC_wk12_padj0.1 <- combined_diet_treatment_contrasts_semipolar_BINC_wk12 %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(row_name, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.1 & p.adj_treatment_FOSGOS < 0.1 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.1 & p.adj_treatment_1472 < 0.1 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(x = restoration_contrasts_semipolar_BINC_wk12_padj0.1, 
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_semipolar_BINC_wk12_padj0.1.csv")
+
+#Statistical analysis - Contrasts-metabolites significantly restored p.adj<0.2--------------------
+
+restoration_contrasts_semipolar_BINC_wk12_padj0.2 <- combined_diet_treatment_contrasts_semipolar_BINC_wk12 %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(row_name, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.2 & p.adj_treatment_FOSGOS < 0.2 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.2 & p.adj_treatment_1472 < 0.2 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(x = restoration_contrasts_semipolar_BINC_wk12_padj0.2, 
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_semipolar_BINC_wk12_padj0.2.csv")
+
+
+#Plotting Figure 2A --------------
+
+metabolites_class_dictionary = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metabolites_class_dictionary.csv")
+
+#Make sure that the metabolites names are spelled in the same way
+clean_semipolar_BINC_level1_level2a_clr_long_clean <- clean_semipolar_BINC_level1_level2a_clr_long %>%
+  mutate(row_name = str_replace(row_name, "^X([0-9])", "\\1")) %>%
+  mutate(row_name = str_replace_all(row_name, "-", " ")) %>%
+  mutate(row_name = str_replace_all(row_name, "_", " ")) %>%
+  mutate(row_name = str_replace_all(row_name, "\\.", "-"))
+
+top_metabolites_diff_diet_F_M_contrasts_0.2 <- clean_semipolar_BINC_level1_level2a_clr_long_clean %>%
+  filter(row_name %in% c("Creatinine", "Kynurenine", "N-Acetylglycine", "Tryptophan", "Uridine", "15-S--HETE",
+                         "Choline", "Deoxyuridine", "Hippuric acid", "Indole-3-carboxyaldehyde", "Lactic acid",
+                         "Pantothenic acid", "Spermidine", "Thymidine", "Uric acid", "2-Hydroxycaproic acid", "2-Methylhippuric acid",
+                         "Alanine", "Arginine", "Bestatin", "Creatine", "Decanoylcarnitine", "Formylkynurenine",
+                         "Maltitol", "N2-Acetyllysine", "N8-Acetylspermidine", "7-Methylguanine", "ADP",
+                         "Acetylcarnitine", "Butyrylcarnitine", "Carnitine", "Corticosterone", "Cholic acid",
+                         "EDTA", "Serotonin", "Thiamine", "Urocanic acid", "3-Hydroxyproline", "3-Ureidopropionic acid",
+                         "5-6-Dihydrothymine", "5-Methylcytidine", "β-Muricholic acid", "Deoxycholic acid", "Homocarnosine",
+                         "N-Acetylhistidine", "N-Acetylphenylalanine", "Nicotinamide N-oxide", "Pipecolinic acid",
+                         "Propionylcarnitine", "Succinic acid", "Taurocholic acid", "4-Guanidinobutyric acid"))   
+
+
+metabolites_class_processed <- metabolites_class_dictionary %>%
+  group_by(row_name) %>%
+  summarise(class = paste(unique(class), collapse = " & ")) %>%
+  ungroup()
+
+heatmap_with_classes <- top_metabolites_diff_diet_F_M_contrasts_0.2 %>%
+  left_join(metabolites_class_processed, by = "row_name") %>%
+  mutate(legend = case_when(
+      legend == "HFHS 1472" ~ "HFHS B. longum APC1472",
+      TRUE ~ as.character(legend)),
+    legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  arrange(class, row_name) %>%
+  mutate(row_name = factor(row_name, levels = unique(row_name))) %>%
+  group_by(row_name, legend, sex) %>%
+  mutate(value_scaled = scale(raw_abundance)[,1],
+    value_scaled = pmax(pmin(value_scaled, 2), -2)) %>%
+  ungroup()
+
+n_classes <- length(unique(heatmap_with_classes$class))
+class_colors <- colorRampPalette(RColorBrewer::brewer.pal(12, "Paired"))(n_classes)
+
+heatmap_top_altered_diet_metabolites_classified <- ggplot() +
+  geom_tile(data = heatmap_with_classes,
+    aes(x = legend, y = row_name, fill = value_scaled),
+    show.legend = TRUE) + scale_fill_gradient2(
+    low = "#00CDCD", 
+    mid = "white", 
+    high = "#7A378B", 
+    midpoint = 0,
+    name = "Z-Score") +
+  facet_wrap(~ sex, nrow = 1, scales = "free_x",
+             labeller = labeller(sex = c("F" = "12-week-old female offspring", 
+                                         "M" = "12-week-old male offspring"))) +
+  new_scale("fill") +
+  geom_tile(data = distinct(heatmap_with_classes, row_name, class),
+    aes(x = 4.5, y = row_name, fill = class),
+    width = 0.2,
+    show.legend = TRUE) +
+  scale_fill_manual(values = class_colors,
+    name = "Metabolite Class",
+    guide = guide_legend(ncol = 2)) +
+  theme_bw() +
+  theme(
+    legend.position = "right",
+    legend.box = "vertical",
+    legend.spacing.y = unit(0.5, "cm"),
+    axis.text.y = element_text(size = 8),
+    axis.ticks.y = element_blank(),
+    axis.line.y = element_blank(),
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid = element_blank(),
+    strip.background = element_rect(fill = "white"),
+    strip.text = element_text(face = "bold")
+  ) +
+  labs(x = NULL, y = NULL)
+
+print(heatmap_top_altered_diet_metabolites_classified)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/FigureS2A.svg", 
+       plot = heatmap_top_altered_diet_metabolites_classified, 
+       device = "svg",
+       width = 14,
+       height = 9)
+
+
+#Plotting Figure 2B-------
+#Pathway Enrichment analyses using Metaboanalyst outcomes-Diet altered-Contrasts-Females
+
+pathway_altered_diet_F_0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metaboanalyst_pathway_enrich_diet_altered_F_padj02.csv")
+
+alter_diet_F_0.2_contrasts <- pathway_altered_diet_F_0.2_contrasts %>% 
+  mutate(pathway_order = reorder(X, -Raw.p)  
+  ) %>%
+  ggplot() + 
+  aes(y = -log10(Raw.p), 
+      x = pathway_order,  
+      colour = -log10(Raw.p), 
+      size = FDR) +
+  geom_linerange(size = 3, aes(xmin = pathway_order, xmax = pathway_order, ymin = 0, ymax = -log10(Raw.p)), 
+                 position = position_dodge(0.5), 
+                 colour = "#7A378B") +
+  geom_point(shape = 21, position = position_dodge(0.5), colour = "black",aes(fill = Raw.p < 0.05)) +
+  geom_hline(yintercept = 0, colour = "black", alpha = 2/3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_size_continuous(
+    range = c(2, 10), 
+    limits = c(0, 1), 
+    breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1), 
+    labels = c("0.1","0.2", "0.3", "0.5", "0.8", "1")
+  ) +
+  scale_x_discrete(
+    position = "bottom",
+    limits = rev(levels(pathway_altered_diet_F_0.2_contrasts$pathway_order))
+  ) +
+  ylab("-log10(P-value)") + 
+  xlab("") + 
+  theme_bw() + 
+  coord_flip()
+
+print(alter_diet_F_0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2B.svg", 
+       plot = alter_diet_F_0.2_contrasts, 
+       device = "svg",
+       width = 8,
+       height = 6)
+
+
+#Plotting Figure 2C------ 
+#Pathway Enrichment analyses using Metaboanalyst outcomes-Diet altered-Contrasts-Males
+
+pathway_altered_diet_M_0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metaboanalyst_pathway_enrich_diet_altered_M_padj02.csv")
+
+alter_diet_M_0.2_contrasts <- pathway_altered_diet_M_0.2_contrasts %>% 
+  mutate(pathway_order = reorder(X, -Raw.p)  
+  ) %>%
+  ggplot() + 
+  aes(y = -log10(Raw.p), 
+      x = pathway_order,  
+      colour = -log10(Raw.p), 
+      size = FDR) +
+  geom_linerange(size = 3, aes(xmin = pathway_order, xmax = pathway_order, ymin = 0, ymax = -log10(Raw.p)), 
+                 position = position_dodge(0.5), 
+                 colour = "#00CDCD") +
+  geom_point(shape = 21, position = position_dodge(0.5), colour = "black",aes(fill = Raw.p < 0.05)) +
+  geom_hline(yintercept = 0, colour = "black", alpha = 2/3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_size_continuous(
+    range = c(2, 10), 
+    limits = c(0, 1), 
+    breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1), 
+    labels = c("0.1","0.2", "0.3", "0.5", "0.8", "1")
+  ) +
+  scale_x_discrete(
+    position = "bottom",
+    limits = rev(levels(pathway_altered_diet_M_0.2_contrasts$pathway_order))
+  ) +
+  ylab("-log10(P-value)") + 
+  xlab("") + 
+  theme_bw() + 
+  coord_flip()
+
+print(alter_diet_M_0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2C.svg", 
+       plot = alter_diet_M_0.2_contrasts, 
+       device = "svg",
+       width = 8,
+       height = 6)
+
+#Plotting Figure 2D-----
+#Pathway Enrichment analyses - Restored by FOS+GOS Contrasts-Females
+
+pathway_restored_FOSGOS_F_0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metaboanalyst_pathway_enrich_FOSGOS_restored_F_padj02.csv")
+
+restored_FOSGOS_F_0.2_contrasts <- pathway_restored_FOSGOS_F_0.2_contrasts %>% 
+  mutate(pathway_order = reorder(X, -Raw.p)  
+  ) %>%
+  ggplot() + 
+  aes(y = -log10(Raw.p), 
+      x = pathway_order, 
+      colour = -log10(Raw.p), 
+      size = FDR) +
+  geom_linerange(size = 3, aes(xmin = pathway_order, xmax = pathway_order, ymin = 0, ymax = -log10(Raw.p)), 
+                 position = position_dodge(0.5), 
+                 colour = "#addead") +
+  geom_point(shape = 21, position = position_dodge(0.5), colour = "black",aes(fill = Raw.p < 0.05)) +
+  geom_hline(yintercept = 0, colour = "black", alpha = 2/3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_size_continuous(
+    range = c(2, 10), 
+    limits = c(0, 1), 
+    breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1), 
+    labels = c("0.1","0.2", "0.3", "0.5", "0.8", "1")
+  ) +
+  scale_x_discrete(
+    position = "bottom",
+    limits = rev(levels(pathway_restored_FOSGOS_F_0.2_contrasts$pathway_order))
+  ) +
+  ylab("-log10(P-value)") + 
+  xlab("") + 
+  theme_bw() + 
+  coord_flip()
+
+print(restored_FOSGOS_F_0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2D.svg", 
+       plot = restored_FOSGOS_F_0.2_contrasts, 
+       device = "svg",
+       width = 8,
+       height = 2)
+
+#Plotting Figure 2E------------
+#Pathway Enrichment analyses - Restored by FOS+GOS Contrasts-Males 
+
+pathway_restored_FOSGOS_M_0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metaboanalyst_pathway_enrich_FOSGOS_restored_M_padj02.csv")
+
+restored_FOSGOS_M_0.2_contrasts <- pathway_restored_FOSGOS_M_0.2_contrasts %>% 
+  mutate(pathway_order = reorder(X, -Raw.p)  
+  ) %>%
+  ggplot() + 
+  aes(y = -log10(Raw.p), 
+      x = pathway_order,  
+      colour = -log10(Raw.p), 
+      size = FDR) +
+  geom_linerange(size = 3, aes(xmin = pathway_order, xmax = pathway_order, ymin = 0, ymax = -log10(Raw.p)), 
+                 position = position_dodge(0.5), 
+                 colour = "#548B54") +
+  geom_point(shape = 21, position = position_dodge(0.5), colour = "black",aes(fill = Raw.p < 0.05)) +
+  geom_hline(yintercept = 0, colour = "black", alpha = 2/3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_size_continuous(
+    range = c(2, 10), 
+    limits = c(0, 1), 
+    breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1), 
+    labels = c("0.1","0.2", "0.3", "0.5", "0.8", "1")
+  ) +
+  scale_x_discrete(
+    position = "bottom",
+    limits = rev(levels(pathway_restored_FOSGOS_M_0.2_contrasts$pathway_order))
+  ) +
+  ylab("-log10(P-value)") + 
+  xlab("") + 
+  theme_bw() + 
+  coord_flip()
+
+print(restored_FOSGOS_M_0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2E.svg", 
+       plot = restored_FOSGOS_M_0.2_contrasts, 
+       device = "svg",
+       width = 8,
+       height = 2)
+
+#Plotting Figure 2F------------
+
+#Pathway Enrichment analyses - Restored by 1472 Contrasts - Females
+
+pathway_restored_1472_F_0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metaboanalyst_pathway_enrich_blongum1472_restored_F_padj02.csv")
+
+restored_1472_F_0.2_contrasts <- pathway_restored_1472_F_0.2_contrasts %>% 
+  mutate(pathway_order = reorder(X, -Raw.p)  
+  ) %>%
+  ggplot() + 
+  aes(y = -log10(Raw.p), 
+      x = pathway_order,  
+      colour = -log10(Raw.p), 
+      size = FDR) +
+  geom_linerange(size = 3, aes(xmin = pathway_order, xmax = pathway_order, ymin = 0, ymax = -log10(Raw.p)), 
+                 position = position_dodge(0.5), 
+                 colour = "#FFA54F") +
+  geom_point(shape = 21, position = position_dodge(0.5), colour = "black",aes(fill = Raw.p < 0.05)) +
+  geom_hline(yintercept = 0, colour = "black", alpha = 2/3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_size_continuous(
+    range = c(2, 10), 
+    limits = c(0, 1), 
+    breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1), 
+    labels = c("0.1","0.2", "0.3", "0.5", "0.8", "1")
+  ) +
+  scale_x_discrete(
+    position = "bottom",
+    limits = rev(levels(pathway_restored_1472_F_0.2_contrasts$pathway_order))
+  ) +
+  ylab("-log10(P-value)") + 
+  xlab("") + 
+  theme_bw() + 
+  coord_flip()
+
+print(restored_1472_F_0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2F.svg", 
+       plot = restored_1472_F_0.2_contrasts, 
+       device = "svg",
+       width = 8,
+       height = 2)
