@@ -368,7 +368,7 @@ heatmap_top_altered_diet_metabolites_classified <- ggplot() +
 
 print(heatmap_top_altered_diet_metabolites_classified)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/FigureS2A.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2A.svg", 
        plot = heatmap_top_altered_diet_metabolites_classified, 
        device = "svg",
        width = 14,
@@ -411,7 +411,7 @@ alter_diet_F_0.2_contrasts <- pathway_altered_diet_F_0.2_contrasts %>%
 
 print(alter_diet_F_0.2_contrasts)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2B.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure2B.svg", 
        plot = alter_diet_F_0.2_contrasts, 
        device = "svg",
        width = 8,
@@ -454,7 +454,7 @@ alter_diet_M_0.2_contrasts <- pathway_altered_diet_M_0.2_contrasts %>%
 
 print(alter_diet_M_0.2_contrasts)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2C.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure2C.svg", 
        plot = alter_diet_M_0.2_contrasts, 
        device = "svg",
        width = 8,
@@ -496,7 +496,7 @@ restored_FOSGOS_F_0.2_contrasts <- pathway_restored_FOSGOS_F_0.2_contrasts %>%
 
 print(restored_FOSGOS_F_0.2_contrasts)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2D.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure2D.svg", 
        plot = restored_FOSGOS_F_0.2_contrasts, 
        device = "svg",
        width = 8,
@@ -538,7 +538,7 @@ restored_FOSGOS_M_0.2_contrasts <- pathway_restored_FOSGOS_M_0.2_contrasts %>%
 
 print(restored_FOSGOS_M_0.2_contrasts)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2E.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure2E.svg", 
        plot = restored_FOSGOS_M_0.2_contrasts, 
        device = "svg",
        width = 8,
@@ -581,7 +581,7 @@ restored_1472_F_0.2_contrasts <- pathway_restored_1472_F_0.2_contrasts %>%
 
 print(restored_1472_F_0.2_contrasts)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure2F.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure2F.svg", 
        plot = restored_1472_F_0.2_contrasts, 
        device = "svg",
        width = 8,
