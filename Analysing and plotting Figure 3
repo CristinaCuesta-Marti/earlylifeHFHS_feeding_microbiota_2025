@@ -1,0 +1,1782 @@
+#Loading packages------
+library(biomaRt)
+library(ggplot2)
+library(ggrepel)
+library(tidyverse)
+library(patchwork)
+library(dplyr)
+library(genefilter)
+library(devtools)
+library(readxl)
+library(pairwiseAdonis)
+library(vegan)
+library(iNEXT)
+library(knitr)
+library(waldo)
+library(ggforce)
+library(ggbeeswarm)
+library(DESeq2)
+library(lme4)
+library(broom)
+library(ggvenn)
+library(VennDiagram)
+library(viridis)
+library(grid)
+library(Tjazi)
+library(kronos)
+library(clusterProfiler)
+library(org.Mm.eg.db)
+library(enrichplot)
+library(gridExtra)
+
+#Load data after running FastaQc and Kallisto------
+
+metadata <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/metadata_RNAseq.csv")
+gene_dictionary <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/gene_dictionary.csv")
+
+#  gene ID transition ----------------------------------------------------------------
+
+counts_short <- counts
+rownames(counts_short) <- substr(rownames(counts), 1, 18)
+
+mart <- useEnsembl(biomart = "ensembl", dataset = "mmusculus_gene_ensembl")
+transcripts_ids <- rownames(counts_short)
+
+gene_ids <- getBM(attributes=c("ensembl_transcript_id", "ensembl_gene_id"),
+                  filters = "ensembl_transcript_id", curl = "CURLHandle",
+                  values = transcripts_ids,
+                  mart = mart, useCache = FALSE)
+
+counts_short$ensembl_transcript_id <- rownames(counts_short)
+counts_gene <- counts_short
+counts_gene <- left_join(counts_gene, gene_ids, by = 'ensembl_transcript_id')
+counts_gene_unique <- counts_gene
+counts_gene_unique$ensembl_transcript_id <- NULL
+
+HYP_count_table <- counts_gene_unique %>% group_by(ensembl_gene_id) %>% summarise_all(sum, na.rm=TRUE)
+
+write_csv(x = HYP_count_table,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/HYP_count_table.csv")
+
+
+#Identify genes with low counts & exclude----------
+low_count_genes <- HYP_count_table[apply(HYP_count_table < 10, 1, sum) >= round(ncol(HYP_count_table) * 0.75), ]
+
+
+count_table_removed_lowcount <- HYP_count_table[apply(HYP_count_table < 10, 1, sum) < round(ncol(HYP_count_table) * 0.75), ]
+count_table_removed_lowcount <- round(count_table_removed_lowcount, 0)
+
+write_csv(x = count_table_removed_lowcount,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/RNAseq_count_table_removed_lowcount.csv")
+
+
+# Apply CLR transformation for relative gene expression--------
+
+
+clr_removed_lowcount <- clr_c(count_table_removed_lowcount)
+
+clr_removed_lowcount = clr_removed_lowcount %>%
+  rownames_to_column("GENE") 
+
+write_csv(x = clr_removed_lowcount,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/RNAseq_clr_removed_lowcount.csv")
+
+clr_removed_lowcount_genename = clr_removed_lowcount %>%
+  left_join(gene_dictionary, by = c("GENE" = "GENE"))
+
+write_csv(x = clr_removed_lowcount_genename,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/RNAseq_clr_removed_lowcount_genename.csv")
+
+#Convert files to a long shape-------
+
+clr_removed_lowcount_long = clr_removed_lowcount %>%
+  #rownames_to_column("GENE") %>%
+  pivot_longer(!GENE, names_to="ID", values_to="Value") %>%
+  inner_join(metadata, by ="ID") 
+
+write_csv(x = clr_removed_lowcount_long,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/RNAseq_clr_removed_lowcount_long.csv")
+
+clr_removed_lowcount_long_genename = clr_removed_lowcount_long %>%
+  left_join(gene_dictionary, by = c("GENE" = "GENE"))
+
+write_csv(x = clr_removed_lowcount_long_genename,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/RNAseq_clr_removed_lowcount_long_genename.csv")
+
+
+#Statistical analysis for CLR transformed-RNAseq data - Contrasts-------------
+
+interaction_effects_contrasts_RNAseq_clr_remov_lowcount <- clr_removed_lowcount_long_genename %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(value),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  mutate(treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(diet, levels = c("Control", "HFHS"))) %>% 
+  group_by(symbol) %>% 
+  nest() %>% 
+  mutate(lm = purrr::map(.x = data, 
+                         .f = ~lm(value ~ diet * treatment * sex, data = .x) %>% broom::tidy())) %>% 
+  select(!data) %>% 
+  unnest(lm) %>% 
+  filter(term != "(Intercept)" & !is.na(estimate)) %>% 
+
+  write_csv(x = interaction_effects_contrasts_RNAseq_clr_remov_lowcount,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/interaction_effects_contrasts_RNAseq_clr_remov_lowcount.csv")
+
+
+#Restoration- wk12 pups--
+
+# Diet contrasts
+diet_contrasts_RNAseq_clr_remov_lowcount <- clr_removed_lowcount_long_genename %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(value),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  filter(measure != "interval_btw_meals_min") %>% 
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(treatment == "Vehicle") %>% 
+  group_by(symbol, sex) %>% 
+  nest() %>% 
+  mutate(diet_pwtt = purrr::map(.x = data, 
+                                .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                formula = value ~ diet,
+                                                                pool.sd = FALSE))) %>% 
+  unnest(diet_pwtt) %>%
+  select(-data) %>%  
+  mutate(comparison_type = "diet")
+
+# Treatment contrasts
+treatment_contrasts_RNAseq_clr_remov_lowcount <- clr_removed_lowcount_long_genename %>% 
+  janitor::clean_names() %>%  
+  pivot_longer(
+    cols = c(value),
+    names_to = "measure",
+    values_to = "value"
+  ) %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(diet == "HFHS") %>% 
+  group_by(symbol, sex) %>% 
+  nest() %>% 
+  mutate(treatment_pwtt = purrr::map(.x = data, 
+                                     .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                     formula = value ~ treatment,
+                                                                     pool.sd = FALSE))) %>% 
+  unnest(treatment_pwtt) %>%
+  select(-data) %>% 
+  mutate(comparison_type = "treatment")
+
+combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount <- bind_rows(diet_contrasts_RNAseq_clr_remov_lowcount, treatment_contrasts_RNAseq_clr_remov_lowcount)
+
+write_csv(x = combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount.csv")
+
+
+#Restoration p.adj value < 0.05---
+
+restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.05 <- combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(symbol, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+
+write_csv(x = restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.05,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.05.csv")
+
+
+#Restoration p.adj<0.1---
+
+restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.1 <- combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(symbol, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.1 & p.adj_treatment_FOSGOS < 0.1 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.1 & p.adj_treatment_1472 < 0.1 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+
+write_csv(x = restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.1,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.1.csv")
+
+
+#Restoration p.adj<0.2
+
+restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.2 <- combined_diet_treatment_contrasts_RNAseq_clr_remov_lowcount %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(symbol, sex) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.2 & p.adj_treatment_FOSGOS < 0.2 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.2 & p.adj_treatment_1472 < 0.2 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+
+write_csv(x = restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.2,
+          file = "earlylifeHFHS_eating_microbiota_2025/outputs/restoration_contrasts_RNAseq_clr_remov_lowcount_padj_0.2.csv")
+
+
+#Plotting Figure 3B-------------
+
+genes_altered_diet_F_M_p0.2_contrasts <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_altered_diet_F_M_p0.2_contrasts.csv")
+
+clr_removed_lowcount_long_top_altered_diet_p0.2_contrasts <- clr_removed_lowcount_long_genename %>%
+  filter(Symbol %in% genes_altered_diet_F_M_p0.2_contrasts$symbol)
+
+#Females
+
+heatmap_top_altered_diet_genes_p0.2_contrasts_F <- clr_removed_lowcount_long_top_altered_diet_p0.2_contrasts %>%
+  mutate(legend = recode_factor(legend, "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  group_by(sex, Symbol) %>%
+  mutate(value_scaled = scale(Value)[, 1]) %>%
+  ungroup() %>%
+  mutate(value_scaled = pmin(pmax(value_scaled, -2), 2)) %>%
+  filter(sex != "M") %>%  
+  ggplot(aes(x = ID, y = Symbol, fill = value_scaled)) +
+  geom_tile() +
+  facet_grid(sex ~ legend, drop = TRUE, scales = "free_x") +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  scale_fill_gradient2(low = "#00CDCD", mid = "white", high = "#7A378B", midpoint = 0) +
+  theme_bw() +
+  theme(
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.ticks.y = element_blank(),
+    strip.text = element_text(size = 10)
+  ) +
+  xlab(NULL) +
+  ylab(NULL)
+print(heatmap_top_altered_diet_genes_p0.2_contrasts_F)
+
+#Males
+
+heatmap_top_altered_diet_genes_p0.2_contrasts_M <- clr_removed_lowcount_long_top_altered_diet_p0.2_contrasts %>%
+  mutate(legend = recode_factor(legend, "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  group_by(sex, Symbol) %>%
+  mutate(value_scaled = scale(Value)[, 1]) %>%
+  ungroup() %>%
+  mutate(value_scaled = pmin(pmax(value_scaled, -2), 2)) %>%
+  filter(sex != "F") %>%  
+  ggplot(aes(x = ID, y = Symbol, fill = value_scaled)) +
+  geom_tile() +
+  facet_grid(sex ~ legend, drop = TRUE, scales = "free_x") +
+  theme(axis.title.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank()) +
+  scale_fill_gradient2(low = "#00CDCD", mid = "white", high = "#7A378B", midpoint = 0) +
+  theme_bw() +
+  theme(
+    legend.position = "none",
+    strip.background = element_rect(fill = "gray90", color = "black"),  
+    strip.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks.y = element_blank(),
+    axis.text.x = element_blank(), 
+    axis.ticks.x = element_blank()  
+  ) +
+  xlab(NULL) +
+  ylab(NULL)
+print(heatmap_top_altered_diet_genes_p0.2_contrasts_M)
+
+
+#Females and males
+combined_heatmap_top_altered_diet_genes_p0.2_contrasts <- (heatmap_top_altered_diet_genes_p0.2_contrasts_F + plot_spacer() + heatmap_top_altered_diet_genes_p0.2_contrasts_M) + plot_layout(heights = c(1, -0.09, 1), guides = 'collect')
+print(combined_heatmap_top_altered_diet_genes_p0.2_contrasts)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3B.svg", 
+       plot = combined_heatmap_top_altered_diet_genes_p0.2_contrasts, 
+       device = "svg",
+       width = 14,
+       height = 8)
+
+
+#Plotting Figure3C------
+
+genes_altered_diet_F_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_altered_diet_F_padj0.2_contrasts.csv")
+genes_altered_diet_M_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_altered_diet_M_padj0.2_contrasts.csv")
+
+
+#Venn Diagram - Hypothalamic Females vs males
+
+diet_altered_genes_F <- genes_altered_diet_F_padj0.2_contrasts[[1]]
+diet_altered_genes_M <- genes_altered_diet_M_padj0.2_contrasts[[1]]
+
+diet_altered_genes_Contrasts_F_M <- list(
+  HFHSdiet_altered_genes_F = diet_altered_genes_F,
+  HFHSdiet_altered_genes_M = diet_altered_genes_M
+)
+
+ggvenn_diet_altered_genes_Contrasts_F_M <- ggvenn(
+  diet_altered_genes_BenjaContrasts_F_M, 
+  fill_color = c("#7A378B", "#00CDCD"),
+  stroke_size = 0.5, 
+  set_name_size = 4,
+  auto_scale = TRUE  # Enable auto-scaling of circle sizes
+)
+
+plot(ggvenn_diet_altered_genes_Contrasts_F_M)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3C.svg", 
+       plot = ggvenn_diet_altered_genes_Contrasts_F_M, 
+       device = "svg",
+       width = 9,
+       height = 8)
+
+
+#Plotting Figure3D------
+
+#Venn Diagram Females & Males - restoration groups
+
+genes_restored_FOSGOS_F_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_restored_FOSGOS_F_padj0.2_contrasts.csv")
+genes_restored_FOSGOS_M_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_restored_FOSGOS_M_padj0.2_contrasts.csv")
+
+genes_restored_blongum1472_F_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_restored_blongum1472_F_padj0.2_contrasts.csv")
+genes_restored_blongum1472_M_padj0.2_contrasts = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/genes_restored_blongum1472_M_padj0.2_contrasts.csv")
+
+
+restored_genes_FOSGOS_F <- genes_restored_FOSGOS_F_padj0.2_contrasts[[1]]
+restored_genes_FOSGOS_M <- genes_restored_FOSGOS_M_padj0.2_contrasts[[1]]
+restored_genes_Blongum_F <- genes_restored_blongum1472_F_padj0.2_contrasts[[1]]
+restored_genes_Blongum_M <- genes_restored_blongum1472_M_padj0.2_contrasts[[1]]
+
+gene_restored_FOSGOS_blongum1472_Contrasts_F_M <- list(
+  FOSGOS_restored_genes_F = restored_genes_FOSGOS_F,
+  FOSGOS_restored_genes_M = restored_genes_FOSGOS_M,
+  B_longum1472_restored_genes_F = restored_genes_Blongum_F,
+  B_longum1472_restored_genes_M = restored_genes_Blongum_M
+)
+
+venn.plot <- venn.diagram(
+  x = gene_restored_FOSGOS_blongum1472_Contrasts_F_M,
+  filename = NULL,
+  category.names = c("FOS+GOS Female", "FOS+GOS Male", 
+                     "B.longum Female", "B.longum Male"),
+  fill = c("#addead", "#addead", "#e1c180", "#e1c180"),
+  alpha = 0.5,
+  scaled = TRUE,
+  cat.cex = 0.8,
+  cat.fontface = "bold",
+  margin = 0.1
+)
+grid.newpage()
+grid.draw(venn.plot)
+dev.off()
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3D.svg", 
+       plot = venn.plot, 
+       device = "svg",
+       width = 9,
+       height = 8)
+
+
+#Plotting Figure 3E-----------
+
+#Enrichment analyses hypothalamic genes altered diet (contrasts) - females
+
+#Files from Jax (https://www.informatics.jax.org/)
+
+amino_acid_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/amino_acid_metabolic_process.xlsx")
+carbohydrate_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/carbohydrate_metabolic_process.xlsx")
+lipid_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/lipid_metabolic_process.xlsx")
+arginine_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/arginine_metabolic_process.xlsx")
+pyrimidine_nucleobase_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/pyrimidine_nucleobase_metabolic_process.xlsx")
+pyruvate_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/pyruvate_metabolic_process.xlsx")
+response_to_nutrient <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/response_to_nutrient.xlsx")
+regulation_cellular_response_insulin_stimulus <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/regulation_cellular_response_insulin_stimulus.xlsx")
+neurogenesis <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/neurogenesis.xlsx")
+cell_surface_receptor_signaling_pathway <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/cell_surface_receptor_signaling_pathway.xlsx")
+Notch_signaling_pathway <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/Notch_signaling_pathway.xlsx")
+glycerophospholipid_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/glycerophospholipid_metabolic_process.xlsx")
+cellular_response_to_nitrogen_compound <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/cellular_response_to_nitrogen_compound.xlsx")
+response_to_peptidoglycan <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/response_to_peptidoglycan.xlsx")
+nucleobase_containing_compound_metabolic_process <- readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/nucleobase_containing_compound_metabolic_process.xlsx")
+
+
+#Females diet both up and down regulated
+
+s1 = amino_acid_metabolic_process
+s2 = carbohydrate_metabolic_process
+s3 = lipid_metabolic_process
+s4 = arginine_metabolic_process
+s5 = pyrimidine_nucleobase_metabolic_process
+s6 = pyruvate_metabolic_process
+s7 = response_to_nutrient
+s8 = regulation_cellular_response_insulin_stimulus
+s9 = neurogenesis
+s10 = glutamatergic_synapse
+s11 = peptidyl_amino_acid_modification
+s12 = regulation_of_RNA_splicing
+s13 = cell_surface_receptor_signaling_pathway
+s14 = Notch_signaling_pathway
+s15 = glycerophospholipid_metabolic_process
+s16 = cellular_response_to_nitrogen_compound
+
+
+genes_altered_diet_F = genes_altered_diet_F_padj0.2_contrasts
+
+alter_diet_F = data.frame(Term = c("amino_acid_metabolic_process","carbohydrate_metabolic_process", "lipid_metabolic_process", 
+                                   "arginine_metabolic_process", "pyrimidine_nucleobase_metabolic_process", 
+                                   "pyruvate_metabolic_process", "response_to_nutrient", 
+                                   "regulation_cellular_response_insulin_stimulus", "neurogenesis",
+                                   "glutamatergic_synapse", "peptidyl_amino_acid_modification",
+                                   "regulation_of_RNA_splicing", "cell_surface_receptor_signaling_pathway",
+                                   "Notch_signaling_pathway", "glycerophospholipid_metabolic_process", "cellular_response_to_nitrogen_compound"),
+                          p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+alter_diet_F[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s2
+alter_diet_F[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s3
+alter_diet_F[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s4
+alter_diet_F[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s5
+alter_diet_F[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s6
+alter_diet_F[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s7
+alter_diet_F[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s8
+alter_diet_F[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s9
+alter_diet_F[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s10
+alter_diet_F[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s11
+alter_diet_F[11, 2] =  
+  phyper(q = length(intersect(unique(toupper(s11$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[11, 3] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[11, 4] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[11, 5] = 
+  (length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s12
+alter_diet_F[12, 2] =  
+  phyper(q = length(intersect(unique(toupper(s12$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[12, 3] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[12, 4] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[12, 5] = 
+  (length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s13
+alter_diet_F[13, 2] =  
+  phyper(q = length(intersect(unique(toupper(s13$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[13, 3] =  
+  length(intersect(unique(toupper(s13$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[13, 4] =  
+  length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[13, 5] = 
+  (length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s14
+alter_diet_F[14, 2] =  
+  phyper(q = length(intersect(unique(toupper(s14$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[14, 3] =  
+  length(intersect(unique(toupper(s14$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[14, 4] =  
+  length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[14, 5] = 
+  (length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s15
+alter_diet_F[15, 2] =  
+  phyper(q = length(intersect(unique(toupper(s15$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[15, 3] =  
+  length(intersect(unique(toupper(s15$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[15, 4] =  
+  length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[15, 5] = 
+  (length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+#s16
+alter_diet_F[16, 2] =  
+  phyper(q = length(intersect(unique(toupper(s16$Symbol)), toupper(genes_altered_diet_F$Symbol))), 
+         m = length(intersect(unique(toupper(s16$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s16$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_F),lower.tail = F)
+alter_diet_F[16, 3] =  
+  length(intersect(unique(toupper(s16$Symbol)), toupper(genes_altered_diet_F$Symbol)))
+alter_diet_F[16, 4] =  
+  length(intersect(unique(toupper(s16$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_F[16, 5] = 
+  (length(intersect(unique(toupper(s16$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_F))/nrow(gene_dictionary)
+
+
+alter_diet_F$ratio   = alter_diet_F$hits / alter_diet_F$genes
+alter_diet_F$fold    = alter_diet_F$hits / alter_diet_F$exp
+alter_diet_F$logfold = log2(alter_diet_F$fold)
+
+plot_alter_diet_F <- ggplot(alter_diet_F %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, fold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#7A378B") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  scale_x_continuous(limits = c(0, 2.5)) +  # Added this line to limit x-axis to 4
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Altered Genes by Diet-Females")
+
+plot(plot_alter_diet_F)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3E.svg", 
+       plot = plot_alter_diet_F, 
+       device = "svg",
+       width = 6,
+       height = 3)
+
+
+#Plotting Figure3F---------------
+#Enrichment analyses hypothalamic genes altered diet (contrasts) - males
+
+organic_acid_metabolic_process <- read_excel("C:/Users/crist/OneDrive - University College Cork/APC/BINC GRANT/Results/RNA/Brain/HYP/RNAseq/1st round/RNAseq final results/jax/metabolism/organic_acid_metabolic_process.xlsx")
+purine_nucleobase_metabolic_process <- read_excel("C:/Users/crist/OneDrive - University College Cork/APC/BINC GRANT/Results/RNA/Brain/HYP/RNAseq/1st round/RNAseq final results/jax/metabolism/NAD_metabolic_process.xlsx")
+steroid_biosynthetic_process <- read_excel("C:/Users/crist/Downloads/steroid_biosynthetic_process.xlsx")
+glucose_metabolic_process <- read_excel("C:/Users/crist/Downloads/response_to_amino_acid.xlsx")
+sterol_biosynthetic_process <- read_excel("C:/Users/crist/Downloads/sterol_biosynthetic_process.xlsx")
+neuron_development <- read_excel("C:/Users/crist/Downloads/neuron_development.xlsx")
+
+
+s1 = carbohydrate_metabolic_process
+s2 = lipid_metabolic_process
+s3 = organic_acid_metabolic_process
+s4 = nucleobase_containing_compound_metabolic_process
+s5 = pyruvate_metabolic_process
+s6 = purine_nucleobase_metabolic_process
+s7 = response_to_nutrient
+s8 = neurogenesis
+s9 = response_to_peptidoglycan
+s10 = cellular_response_to_nitrogen_compound 
+s11 = steroid_biosynthetic_process
+s12 = amino_acid_metabolic_process
+s13 = glucose_metabolic_process
+s14 = sterol_biosynthetic_process
+s15 = neuron_development
+
+genes_altered_diet_M = genes_altered_diet_M_padj0.2_contrasts
+
+alter_diet_M = data.frame(Term = c("carbohydrate_metabolic_process", "lipid_metabolic_process", 
+                                   "organic_acid_metabolic_process", "nucleobase_containing_compound_metabolic_process", 
+                                   "pyruvate_metabolic_process", "purine_nucleobase_metabolic_process",
+                                   "response_to_nutrient", "neurogenesis", "response_to_peptidoglycan",
+                                   "cellular_response_to_nitrogen_compound", "steroid_biosynthetic_process",
+                                   "amino_acid_metabolic_process", "glucose_metabolic_process",
+                                   "sterol_biosynthetic_process", "neuron_development"),
+                          p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+alter_diet_M[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s2
+alter_diet_M[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s3
+alter_diet_M[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s4
+alter_diet_M[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s5
+alter_diet_M[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s6
+alter_diet_M[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s7
+alter_diet_M[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s8
+alter_diet_M[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s9
+alter_diet_M[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s10
+alter_diet_M[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s11
+alter_diet_M[11, 2] =  
+  phyper(q = length(intersect(unique(toupper(s11$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[11, 3] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[11, 4] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[11, 5] = 
+  (length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+
+#s12
+alter_diet_M[12, 2] =  
+  phyper(q = length(intersect(unique(toupper(s12$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[12, 3] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[12, 4] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[12, 5] = 
+  (length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s13
+alter_diet_M[13, 2] =  
+  phyper(q = length(intersect(unique(toupper(s13$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[13, 3] =  
+  length(intersect(unique(toupper(s13$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[13, 4] =  
+  length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[13, 5] = 
+  (length(intersect(unique(toupper(s13$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s14
+alter_diet_M[14, 2] =  
+  phyper(q = length(intersect(unique(toupper(s14$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[14, 3] =  
+  length(intersect(unique(toupper(s14$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[14, 4] =  
+  length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[14, 5] = 
+  (length(intersect(unique(toupper(s14$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+#s15
+alter_diet_M[15, 2] =  
+  phyper(q = length(intersect(unique(toupper(s15$Symbol)), toupper(genes_altered_diet_M$Symbol))), 
+         m = length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_altered_diet_M),lower.tail = F)
+alter_diet_M[15, 3] =  
+  length(intersect(unique(toupper(s15$Symbol)), toupper(genes_altered_diet_M$Symbol)))
+alter_diet_M[15, 4] =  
+  length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))
+alter_diet_M[15, 5] = 
+  (length(intersect(unique(toupper(s15$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_altered_diet_M))/nrow(gene_dictionary)
+
+
+alter_diet_M$ratio   = alter_diet_M$hits / alter_diet_M$genes
+alter_diet_M$fold    = alter_diet_M$hits / alter_diet_M$exp
+alter_diet_M$logfold = log2(alter_diet_M$fold)
+
+
+plot_alter_diet_M <- ggplot(alter_diet_M %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, fold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#00CDCD") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  scale_x_continuous(limits = c(0, 2.5)) +  # Added this line to limit x-axis to 4
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Altered Genes by Diet-Males")
+
+plot(plot_alter_diet_M)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3F.svg", 
+       plot = plot_alter_diet_M, 
+       device = "svg",
+       width = 6.5,
+       height = 3)
+
+
+#Plotting Figure3G---------
+#Enrichment analyses hypothalamic genes restored by FOSGOS (contrasts) - females
+
+Laminoacid_metabolic_process <- read_excel("C:/Users/crist/OneDrive - University College Cork/APC/BINC GRANT/Results/RNA/Brain/HYP/RNAseq/1st round/RNAseq final results/jax/metabolism/Laminoacid_metabolic_process.xlsx")
+
+
+s1 = amino_acid_metabolic_process
+s2 = regulation_of_RNA_splicing
+s3 = lipid_metabolic_process
+s4 = pyrimidine_nucleobase_metabolic_process
+s5 = cell_surface_receptor_signaling_pathway
+s6 = response_to_nutrient
+s7 = neurogenesis
+s8 = nucleobase_containing_compound_metabolic_process
+s9 = glycerophospholipid_metabolic_process
+s10 = Laminoacid_metabolic_process
+
+genes_restored_FOSGOS_F = genes_restored_FOSGOS_F_padj0.2_contrasts 
+
+#Females
+
+restored_FOSGOS_F = data.frame(Term = c("amino_acid_metabolic_process", "regulation_of_RNA_splicing", 
+                                        "lipid_metabolic_process", "pyrimidine_nucleobase_metabolic_process",
+                                        "cell_surface_receptor_signaling_pathway", "response_to_nutrient",
+                                        "neurogenesis", "nucleobase_containing_compound_metabolic_process",
+                                        "glycerophospholipid_metabolic_process",  
+                                        "Laminoacid_metabolic_process"),
+                               p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+restored_FOSGOS_F[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s2
+restored_FOSGOS_F[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s3
+restored_FOSGOS_F[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s4
+restored_FOSGOS_F[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s5
+restored_FOSGOS_F[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s6
+restored_FOSGOS_F[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s7
+restored_FOSGOS_F[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s8
+restored_FOSGOS_F[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s9
+restored_FOSGOS_F[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+#s10
+restored_FOSGOS_F[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_F),lower.tail = F)
+restored_FOSGOS_F[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_FOSGOS_F$Symbol)))
+restored_FOSGOS_F[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_F[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_F))/nrow(gene_dictionary)
+
+
+restored_FOSGOS_F$ratio   = restored_FOSGOS_F$hits / restored_FOSGOS_F$genes
+restored_FOSGOS_F$fold    = restored_FOSGOS_F$hits / restored_FOSGOS_F$exp
+restored_FOSGOS_F$logfold = log2(restored_FOSGOS_F$fold)
+
+
+plot_restored_FOSGOS_F <- ggplot(restored_FOSGOS_F %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, logfold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#addead") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  scale_x_continuous(limits = c(0, 4)) +  # Added this line to limit x-axis to 4
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Restored Genes by FOS+GOS-Females")
+plot(plot_restored_FOSGOS_F)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3G.svg", 
+       plot = plot_restored_FOSGOS_F, 
+       device = "svg",
+       width = 6.5,
+       height = 3)
+
+
+#Plotting Figure3H----------
+#Enrichment analyses hypothalamic genes restored by FOSGOS (contrasts) - males
+
+
+s1 = cellular_response_nitrogen_compound
+s2 = steroid_biosynthetic_process
+s3 = response_to_peptidoglycan
+s4 = carbohydrate_metabolic_process
+s5 = response_to_nutrient
+s6 = sterol_biosynthetic_process
+s7 = Laminoacid_metabolic_process
+s8 = nucleobase_containing_compound_metabolic_process
+
+genes_restored_FOSGOS_M = genes_restored_FOSGOS_M_padj0.2_contrasts 
+
+
+restored_FOSGOS_M = data.frame(Term = c("cellular_response_nitrogen_compound", "steroid_biosynthetic_process", 
+                                        "response_to_peptidoglycan", "carbohydrate_metabolic_process",
+                                        "response_to_nutrient", "sterol_biosynthetic_process",
+                                        "Laminoacid_metabolic_process", "nucleobase_containing_compound_metabolic_process"),
+                               p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+restored_FOSGOS_M[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s2
+restored_FOSGOS_M[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s3
+restored_FOSGOS_M[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s4
+restored_FOSGOS_M[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s5
+restored_FOSGOS_M[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s6
+restored_FOSGOS_M[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s7
+restored_FOSGOS_M[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s8
+restored_FOSGOS_M[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s9
+restored_FOSGOS_M[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s10
+restored_FOSGOS_M[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s11
+restored_FOSGOS_M[11, 2] =  
+  phyper(q = length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[11, 3] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[11, 4] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[11, 5] = 
+  (length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+#s12
+restored_FOSGOS_M[12, 2] =  
+  phyper(q = length(intersect(unique(toupper(s12$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol))), 
+         m = length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_FOSGOS_M),lower.tail = F)
+restored_FOSGOS_M[12, 3] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(genes_restored_FOSGOS_M$Symbol)))
+restored_FOSGOS_M[12, 4] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))
+restored_FOSGOS_M[12, 5] = 
+  (length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_FOSGOS_M))/nrow(gene_dictionary)
+
+restored_FOSGOS_M$ratio = restored_FOSGOS_M$hits / restored_FOSGOS_M$genes
+restored_FOSGOS_M$fold    = restored_FOSGOS_M$hits / restored_FOSGOS_M$exp
+restored_FOSGOS_M$logfold = log2(restored_FOSGOS_M$fold)
+
+
+plot_restored_FOSGOS_M <- ggplot(restored_FOSGOS_M %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, fold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#548B54") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  #scale_x_continuous(limits = c(0, 4)) +  # Added this line to limit x-axis to 4
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Restored Genes by FOS+GOS-Males")
+plot(plot_restored_FOSGOS_M)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3H.svg", 
+       plot = plot_restored_FOSGOS_M, 
+       device = "svg",
+       width = 6.5,
+       height = 3)
+
+#Plotting Figure3I------
+#Enrichment analyses hypothalamic genes restored by B. longum APC1472 (contrasts) - females
+
+tryptophan_metabolic_process <- read_excel("C:/Users/crist/OneDrive - University College Cork/APC/BINC GRANT/Results/RNA/Brain/HYP/RNAseq/1st round/RNAseq final results/jax/metabolism/tryptophan_metabolic_process.xlsx")
+alternative_mRNA_splicing <- read_excel("C:/Users/crist/Downloads/alternative_mRNA_splicing.xlsx")
+nicotinamide_nucleotide_metabolic_process <- read_excel("C:/Users/crist/OneDrive - University College Cork/APC/BINC GRANT/Results/RNA/Brain/HYP/RNAseq/1st round/RNAseq final results/jax/metabolism/nicotinamide_nucleotide_metabolic_process.xlsx")
+
+genes_restored_1472_F = genes_restored_blongum1472_F_padj0.2_contrasts
+
+
+s1 = Notch_signaling_pathway
+s2 = tryptophan_metabolic_process
+s3 = glycerophospholipid_metabolic_process
+s4 = alternative_mRNA_splicing
+s5 = pyrimidine_nucleobase_metabolic_process
+s6 = regulation_of_RNA_splicing
+s7 = peptidyl_amino_acid_modification
+s8 = nicotinamide_nucleotide_metabolic_process
+s9 = cellular_response_nitrogen_compound
+s10 = cell_surface_receptor_signaling_pathway
+s11 = neurogenesis
+
+#Females
+genes_altered_diet_F = genes_altered_diet_F
+
+rest_1472_metab_F = data.frame(Term = c("Notch_signaling_pathway","tryptophan_metabolic_process", "glycerophospholipid_metabolic_process", 
+                                        "alternative_mRNA_splicing", "pyrimidine_nucleobase_metabolic_process", 
+                                        "regulation_of_RNA_splicing", "peptidyl_amino_acid_modification", "nicotinamide_nucleotide_metabolic_process", "cellular_response_nitrogen_compound",
+                                        "cell_surface_receptor_signaling_pathway", "neurogenesis"),
+                               p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+rest_1472_metab_F[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s2
+rest_1472_metab_F[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s3
+rest_1472_metab_F[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s4
+rest_1472_metab_F[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s5
+rest_1472_metab_F[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s6
+rest_1472_metab_F[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s7
+rest_1472_metab_F[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s8
+rest_1472_metab_F[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s9
+rest_1472_metab_F[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s10
+rest_1472_metab_F[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+#s11
+rest_1472_metab_F[11, 2] =  
+  phyper(q = length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_1472_F$Symbol))), 
+         m = length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_F),lower.tail = F)
+rest_1472_metab_F[11, 3] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_1472_F$Symbol)))
+rest_1472_metab_F[11, 4] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_F[11, 5] = 
+  (length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_F))/nrow(gene_dictionary)
+
+
+
+rest_1472_metab_F$ratio   = rest_1472_metab_F$hits / rest_1472_metab_F$genes
+rest_1472_metab_F$fold    = rest_1472_metab_F$hits / rest_1472_metab_F$exp
+rest_1472_metab_F$logfold = log2(rest_1472_metab_F$fold)
+
+plot_restored_1472_F <- ggplot(rest_1472_metab_F %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, fold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#FFA54F") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Restored Genes by 1472-Females")
+plot(plot_restored_1472_F)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3I.svg", 
+       plot = plot_restored_1472_F, 
+       device = "svg",
+       width = 6,
+       height = 3)
+
+
+#Plotting Figure3J------
+#Enrichment analyses hypothalamic genes restored by B. longum APC1472 (contrasts) - males
+
+
+s1 = amino_acid_metabolic_process
+s2 = carbohydrate_metabolic_process
+s3 = lipid_metabolic_process
+s4 = neurogenesis
+s5 = purine_nucleobase_metabolic_process
+s6 = pyruvate_metabolic_process
+s7 = monocarboxylic_acid_metabolic_process
+s8 = nicotinamide_nucleotide_metabolic_process
+s9 = cellular_response_nitrogen_compound
+s10 = response_to_peptidoglycan
+S11 = alternative_mRNA_splicing
+s12 = sterol_biosynthetic_process
+
+genes_restored_1472_M = genes_restored_blongum1472_M_padj0.2_contrasts
+
+
+rest_1472_metab_M = data.frame(Term = c("amino_acid_metabolic_process","carbohydrate_metabolic_process", "lipid_metabolic_process", 
+                                        "neurogenesis", "purine_nucleobase_metabolic_process", 
+                                        "pyruvate_metabolic_process", "monocarboxylic_acid_metabolic_process",
+                                        "nicotinamide_nucleotide_metabolic_process", "cellular_response_nitrogen_compound",
+                                        "response_to_peptidoglycan", "alternative_mRNA_splicing",
+                                        "sterol_biosynthetic_process"),
+                               p = NA, hits = NA, genes = NA, exp = NA)
+
+#s1
+rest_1472_metab_M[1, 2] =  
+  phyper(q = length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[1, 3] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[1, 4] =  
+  length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[1,5] = 
+  (length(intersect(unique(toupper(s1$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s2
+rest_1472_metab_M[2, 2] =  
+  phyper(q = length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[2, 3] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[2, 4] =  
+  length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[2, 5] = 
+  (length(intersect(unique(toupper(s2$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s3
+rest_1472_metab_M[3, 2] =  
+  phyper(q = length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[3, 3] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[3, 4] =  
+  length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[3, 5] = 
+  (length(intersect(unique(toupper(s3$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s4
+rest_1472_metab_M[4, 2] =  
+  phyper(q = length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[4, 3] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[4, 4] =  
+  length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[4, 5] = 
+  (length(intersect(unique(toupper(s4$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s5
+rest_1472_metab_M[5, 2] =  
+  phyper(q = length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[5, 3] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[5, 4] =  
+  length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[5, 5] = 
+  (length(intersect(unique(toupper(s5$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s6
+rest_1472_metab_M[6, 2] =  
+  phyper(q = length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[6, 3] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[6, 4] =  
+  length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[6, 5] = 
+  (length(intersect(unique(toupper(s6$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s7
+rest_1472_metab_M[7, 2] =  
+  phyper(q = length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[7, 3] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[7, 4] =  
+  length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[7, 5] = 
+  (length(intersect(unique(toupper(s7$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s8
+rest_1472_metab_M[8, 2] =  
+  phyper(q = length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[8, 3] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[8, 4] =  
+  length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[8, 5] = 
+  (length(intersect(unique(toupper(s8$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s9
+rest_1472_metab_M[9, 2] =  
+  phyper(q = length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[9, 3] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[9, 4] =  
+  length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[9, 5] = 
+  (length(intersect(unique(toupper(s9$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s10
+rest_1472_metab_M[10, 2] =  
+  phyper(q = length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[10, 3] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[10, 4] =  
+  length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[10, 5] = 
+  (length(intersect(unique(toupper(s10$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s11
+rest_1472_metab_M[11, 2] =  
+  phyper(q = length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[11, 3] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[11, 4] =  
+  length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[11, 5] = 
+  (length(intersect(unique(toupper(s11$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+#s12
+rest_1472_metab_M[12, 2] =  
+  phyper(q = length(intersect(unique(toupper(s12$Symbol)), toupper(genes_restored_1472_M$Symbol))), 
+         m = length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol))), 
+         n = (nrow(gene_dictionary) - length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))), 
+         k = nrow(genes_restored_1472_M),lower.tail = F)
+rest_1472_metab_M[12, 3] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(genes_restored_1472_M$Symbol)))
+rest_1472_metab_M[12, 4] =  
+  length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))
+rest_1472_metab_M[12, 5] = 
+  (length(intersect(unique(toupper(s12$Symbol)), toupper(gene_dictionary$Symbol)))*nrow(genes_restored_1472_M))/nrow(gene_dictionary)
+
+
+rest_1472_metab_M$ratio = rest_1472_metab_M$hits / rest_1472_metab_M$genes
+rest_1472_metab_M$fold    = rest_1472_metab_M$hits / rest_1472_metab_M$exp
+rest_1472_metab_M$logfold = log2(rest_1472_metab_M$fold)
+
+plot_restored_1472_M <- ggplot(rest_1472_metab_M %>% arrange(desc(fold))) +
+  aes(xend = 0, yend = reorder(Term, fold), x = logfold, y = Term, fill = p < 0.05) +
+  geom_segment(size = 1.5, color = "#8B5A2B") +
+  geom_point(shape = 21, size = 3) +
+  scale_fill_manual(values = c("TRUE" = "#b7b7b7", "FALSE" = "white")) +
+  scale_y_discrete(position = "left") +
+  ylab("") + xlab("log2-fold enrichment") +
+  theme_bw() + 
+  ggtitle("Enrichment Restored Genes by 1472-Males")
+plot(plot_restored_1472_M)
+
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure3J.svg", 
+       plot = plot_restored_1472_M, 
+       device = "svg",
+       width = 6,
+       height = 3)
