@@ -1,0 +1,236 @@
+#Loading packages------
+library(tidyverse)
+library(patchwork)
+library(ggnewscale)  
+library(RColorBrewer)
+library(outliers)
+
+
+
+# Grubbs' test to identify outliers for body weight and body weight gain-------
+bw_and_bwgain_wk_12_pups = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/bw_and_bwgain_wk_12_pups.csv")
+
+outliers_bw_and_bwgain_wk12_pups_grubbs <- bw_and_bwgain_wk_12_pups %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Age = factor(Age)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend, Age)) %>%
+  group_by(Sex, Age, name, Legend) %>%
+  nest() %>%
+  mutate(n = map_dbl(data, ~ sum(!is.na(as.numeric(.x$value)))),  
+         
+         G = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[1]]
+           } else {
+             NA  
+           }
+         }),
+         U = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[2]]
+           } else {
+             NA
+           }
+         }),
+         grubbs = map(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$alternative
+           } else {
+             NA
+           }
+         }),
+         p_grubbs = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$p.value
+           } else {
+             NA
+           }
+         })) %>%
+  mutate(G = ifelse(is.na(G), NA, signif(G, 3)),
+         U = ifelse(is.na(U), NA, signif(U, 3)),
+         grubbs = ifelse(is.na(grubbs), NA, unlist(grubbs)),
+         p_grubbs = ifelse(is.na(p_grubbs), NA, signif(p_grubbs, 3))) %>%
+  
+  dplyr::select(-data) %>%
+  arrange(p_grubbs) %>%
+write.csv(x = ., 
+          file = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_bw_and_bw_gain_wk_12_pups_grubbs.csv")
+
+#Plotting Figure S2A----------
+
+bw_and_bwgain_wk_12_pups_wo_outliers = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/bw_and_bwgain_wk_12_pups_wo_outliers.csv")
+
+bw_gain_FOSGOS_1472_wo_outliers <- bw_and_bwgain_wk_12_pups_wo_outliers %>%  
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend, "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(Age = as.numeric(sub("PND", "", Age))) %>%
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter(name %in% c("bw_gain")) %>% 
+  group_by(Age, Legend, Sex) %>% 
+  summarise(
+    mean = mean(value, na.rm = TRUE),  
+    sd = sd(value, na.rm = TRUE),  
+    n = n(),  
+    sem = sd / sqrt(n),  
+    .groups = 'drop'
+  ) %>% 
+  ggplot() +
+  annotate("rect", xmin = 1, xmax = 35, ymin = -Inf, ymax = Inf, fill = "#DB7093", alpha = 0.2) +
+  annotate("rect", xmin = 35, xmax = 84, ymin = -Inf, ymax = Inf, fill = "#FFEC8B", alpha = 0.2) +
+  aes(x = Age, y = mean, fill = Legend, group = Legend, colour = Legend) +
+  geom_line(aes(group = Legend), linewidth = 1, na.rm = TRUE) +  
+  geom_point(shape = 21, alpha = 0.5, colour = "black", size = 3, na.rm = TRUE) +  
+  geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), width = 0.2, na.rm = TRUE) +
+  scale_x_continuous(breaks = c(1, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84)) +
+  labs(x = "Age (PND)", y = "Body weight gain (g)") +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4", "HFHS Vehicle" = "#f94040", 
+                               "HFHS FOS+GOS" = "#addead", "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4", "HFHS Vehicle" = "#f94040", 
+                                 "HFHS FOS+GOS" = "#addead", "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~Sex) +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 12), axis.text.x = element_text(size = 10), axis.ticks.x = element_blank())
+print(bw_gain_FOSGOS_1472_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2A.svg", 
+       plot = bw_gain_FOSGOS_1472_wo_outliers, 
+       device = "svg",
+       width = 12,
+       height = 6)
+
+
+#Plotting Figure S2B---------
+
+tidy_data_wk12pups_food_energy_intake = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/tidy_data_wk12pups_food_energy_intake.csv")
+
+#Food intake
+daily_foodintake_wk12_PND22_PND85 <- tidy_data_wk12pups_food_energy_intake %>%  
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS" ,
+                                    "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  #mutate(Age = as.numeric(sub("PND", "", Age))) %>%
+  pivot_longer(!c(Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("food_intake"))) %>%
+  group_by(Age, Legend, Sex) %>% 
+  summarise(
+    sd = sd(value, na.rm = TRUE), 
+    mean = mean(value, na.rm = TRUE), 
+    n = n(),
+    sem = sd / sqrt(n), 
+    .groups = 'drop'
+  ) 
+filtered_dailyfoodintake_PND22_PND85 <- daily_foodintake_wk12_PND22_PND85 %>%
+  filter(!(Age >= 48 & Age <= 54) & !(Age >= 73 & Age <= 80))
+
+daily_foodintake_wk12_PND22_PND85_lines <- ggplot(filtered_dailyfoodintake_PND22_PND85, 
+                                                  aes(x = Age, y = mean, fill = Legend, group = Legend, colour = Legend)) +
+  annotate("rect", xmin = 21, xmax = 35, ymin = -Inf, ymax = Inf, fill = "#DB7093", alpha = 0.2) +
+  annotate("rect", xmin = 35, xmax = 84, ymin = -Inf, ymax = Inf, fill = "#FFEC8B", alpha = 0.2) +
+  geom_line(data = filtered_dailyfoodintake_PND22_PND85 %>% filter(Age <= 48), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  geom_line(data = filtered_dailyfoodintake_PND22_PND85 %>% filter(Age >= 55 & Age <= 73), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  geom_line(data = filtered_dailyfoodintake_PND22_PND85 %>% filter(Age >= 81), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  
+  geom_point(shape = 21, alpha = 0.5, colour = "black", size = 3, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), width = 0.2, na.rm = TRUE) +
+  scale_x_continuous(breaks = c(21, 28, 35, 42, 49, 56, 63, 70, 77, 84)) +
+  labs(x = "Age (PND)", y = "Daily food intake + food crumbled (g)") +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4", 
+                               "HFHS Vehicle" = "#f94040", 
+                               "HFHS FOS+GOS" = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4", 
+                                 "HFHS Vehicle" = "#f94040", 
+                                 "HFHS FOS+GOS" = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~Sex) +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 12), axis.text.x = element_text(size = 10), axis.ticks.x = element_blank())
+
+print(daily_foodintake_wk12_PND22_PND85_lines)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2B.svg", 
+       plot = daily_foodintake_wk12_PND22_PND85_lines, 
+       device = "svg",
+       width = 15,
+       height = 6)
+
+#Plotting Figure S2C---------
+
+#Energy intake
+
+daily_energyintake_wk12_FOSGOS_1472 <- tidy_data_wk12pups_food_energy_intake %>%  
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS" ,
+                                    "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  #mutate(Age = as.numeric(sub("PND", "", Age))) %>%
+  pivot_longer(!c(Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("energy_intake"))) %>%
+  group_by(Age, Legend, Sex) %>% 
+  summarise(
+    sd = sd(value, na.rm = TRUE), 
+    mean = mean(value, na.rm = TRUE), 
+    n = n(),
+    sem = sd / sqrt(n),  
+    .groups = 'drop'
+  ) 
+
+filtered_dailyenergyintake <- daily_energyintake_wk12_FOSGOS_1472 %>%
+  filter(!(Age >= 48 & Age <= 56) & !(Age >= 73 & Age <= 82))
+
+daily_energyintake_wk12_FOSGOS_1472 <- ggplot(filtered_dailyenergyintake, 
+                                              aes(x = Age, y = mean, fill = Legend, group = Legend, colour = Legend)) +
+  annotate("rect", xmin = 21, xmax = 35, ymin = -Inf, ymax = Inf, fill = "#DB7093", alpha = 0.2) +
+  annotate("rect", xmin = 35, xmax = 84, ymin = -Inf, ymax = Inf, fill = "#FFEC8B", alpha = 0.2) +
+  geom_line(data = filtered_dailyenergyintake %>% filter(Age <= 48), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  geom_line(data = filtered_dailyenergyintake %>% filter(Age >= 56 & Age <= 73), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  geom_line(data = filtered_dailyenergyintake %>% filter(Age >= 82), 
+            aes(group = Legend), linewidth = 1, na.rm = TRUE) +
+  geom_point(shape = 21, alpha = 0.5, colour = "black", size = 3, na.rm = TRUE) +
+  geom_errorbar(aes(ymin = mean - sem, ymax = mean + sem), width = 0.2, na.rm = TRUE) +
+  scale_x_continuous(breaks = c(21, 28, 35, 42, 49, 56, 63, 70, 77, 84)) +
+  labs(x = "Age (PND)", y = "Daily energy intake (+food crumbling) (kcal)") +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4", 
+                               "HFHS Vehicle" = "#f94040", 
+                               "HFHS FOS+GOS" = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4", 
+                                 "HFHS Vehicle" = "#f94040", 
+                                 "HFHS FOS+GOS" = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~Sex) +
+  theme_bw() +
+  theme(axis.title.x = element_text(size = 12), axis.text.x = element_text(size = 10), axis.ticks.x = element_blank())
+
+print(daily_energyintake_wk12_FOSGOS_1472)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2C.svg", 
+       plot = daily_energyintake_wk12_FOSGOS_1472, 
+       device = "svg",
+       width = 15,
+       height = 6)
