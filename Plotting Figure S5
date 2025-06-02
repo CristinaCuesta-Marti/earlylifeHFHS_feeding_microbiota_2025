@@ -1,0 +1,442 @@
+#Load packages----------
+library(tidyverse)
+library(patchwork)
+library(outliers)
+library(gridExtra)     
+library(rlang)
+
+
+#Outliers test IpGTT - grubbs ------------
+
+ipgtt_data <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/ipgtt_data.csv")
+
+ipgtt_data_grubbs <- ipgtt_data %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend, BW.g.)) %>%
+  group_by(Sex, name, Legend) %>%
+  nest() %>%
+  mutate(n = map_dbl(data, ~ sum(!is.na(as.numeric(.x$value)))),  
+         
+         G = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[1]]
+           } else {
+             NA  
+           }
+         }),
+         U = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[2]]
+           } else {
+             NA
+           }
+         }),
+         grubbs = map(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$alternative
+           } else {
+             NA
+           }
+         }),
+         p_grubbs = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$p.value
+           } else {
+             NA
+           }
+         })) %>%
+  mutate(G = ifelse(is.na(G), NA, signif(G, 3)),
+         U = ifelse(is.na(U), NA, signif(U, 3)),
+         grubbs = ifelse(is.na(grubbs), NA, unlist(grubbs)),
+         p_grubbs = ifelse(is.na(p_grubbs), NA, signif(p_grubbs, 3))) %>%
+  
+  dplyr::select(-data) %>%
+  arrange(p_grubbs) %>%
+  write.csv(x = ., 
+          path = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_ipgtt_data.csv")
+
+
+#Plotting Figure S5A---------
+
+ipgtt_data_wo_outliers <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/ipgtt_data_without_outliers.csv")
+
+
+ipgtt_frombasal_0_120min_wo_outliers <- ipgtt_data_wo_outliers %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend, BW.g.)) %>%
+  filter(str_detect(name, "IpGTT_basal_0min|IpGTT_basal_15min|IpGTT_basal_30min|IpGTT_basal_60min|IpGTT_basal_90min|IpGTT_basal_120min")) %>%
+  mutate(Time = as.numeric(str_extract(name, "\\d{1,3}(?=min)")),
+         Group = paste(Legend, sep = " - ")) %>%
+  mutate(Time = factor(Time, levels = c(0, 15, 30, 60, 90, 120))) %>%
+  mutate(name = case_when(
+    name == "IpGTT_basal_0min" ~ "0min",
+    name == "IpGTT_basal_15min" ~ "15min",
+    name == "IpGTT_basal_30min" ~ "30min",
+    name == "IpGTT_basal_60min" ~ "60min",
+    name == "IpGTT_basal_90min" ~ "90min",
+    name == "IpGTT_basal_120min" ~ "120min",
+    TRUE ~ name
+  ))
+
+summary_ipgtt_frombasal_0_120min_wo_outliers <- ipgtt_frombasal_0_120min_wo_outliers %>%
+  group_by(Time, Group, Sex) %>%
+  summarise(mean_value = mean(value, na.rm = TRUE),
+            sem_value = sd(value, na.rm = TRUE) / sqrt(n())) %>%
+  ungroup()
+
+summary_ipgtt_frombasal_0_120min_wo_outliers$Group <- factor(summary_ipgtt_frombasal_0_120min_wo_outliers$Group,
+                                                             levels = c("Control Vehicle",
+                                                                        "HFHS Vehicle",
+                                                                        "HFHS FOS+GOS",
+                                                                        "HFHS B. longum APC1472"))
+
+ipgtt_frombasal_0_120min_wo_outliers <- ggplot(summary_ipgtt_frombasal_0_120min_wo_outliers, aes(x = as.numeric(as.character(Time)), y = mean_value, colour = Group, group = Group)) +
+  geom_line(size = 0.8) +
+  geom_point(aes(fill = Group), shape = 21, position = position_dodge(0.8), stroke = 0.6, size = 2, colour = "black") +
+  geom_errorbar(aes(ymin = mean_value - sem_value, ymax = mean_value + sem_value), width = 0.2) +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  theme_bw() +
+  facet_wrap(~Sex, scales = "fixed") +
+  scale_x_continuous(breaks = c(0, 15, 30, 60, 90, 120)) +
+  xlab("Time (minutes)") +
+  ylab("Glucose from basal levels (mM)")
+
+print(ipgtt_frombasal_0_120min_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS5A.svg", 
+       plot = ipgtt_frombasal_0_120min_wo_outliers, 
+       device = "svg")
+
+#Plotting Figure S5B----------
+
+AUC_frombasal_wo_outliers <- ipgtt_data_wo_outliers %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>% 
+  mutate(Mouse_ID = factor(Mouse_ID)) %>% 
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend, BW.g.)) %>% 
+  filter(str_detect(name, "AUC_vs_basal")) %>% 
+  mutate(name = case_when(name == "AUC_vs_basal" ~ "AUC")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +  
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  
+           colour = "black") +
+  
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +    
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle" = "#f94040", 
+                               "HFHS FOS+GOS" = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle" = "#f94040", 
+                                 "HFHS FOS+GOS" = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  
+  coord_cartesian(ylim = c(11000, 13000)) +  
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) +
+  ylab("AUC from basal")
+
+print(AUC_frombasal_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS5B.svg", 
+       plot = AUC_frombasal_wo_outliers, 
+       device = "svg",
+       width = 7,    
+       height = 5    
+)
+
+#Plotting Figure S5C------------------
+
+basal_glucose_wo_outliers <- ipgtt_data_wo_outliers %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>% 
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>% 
+  mutate(Mouse_ID = factor(Mouse_ID)) %>% 
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend, BW.g.)) %>% 
+  filter(str_detect(name, "Basal_Glucose")) %>% 
+  mutate(name = case_when(name == "Basal_Glucose" ~ "Basal glucose")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +  
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8), 
+           width = 0.6,  
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +      
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle" = "#f94040", 
+                               "HFHS FOS+GOS" = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle" = "#f94040", 
+                                 "HFHS FOS+GOS" = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Glucose (mM)")
+print(basal_glucose_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS5C.svg", 
+       plot = basal_glucose_wo_outliers, 
+       device = "svg",
+       width = 7,    
+       height = 5)
+
+
+#Outliers test tissues wk 12 offspring- grubbs ------------
+
+tissues_wk12_weight <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/tissues_wk12_weight.csv")
+
+tissues_wk12_weight_grubbs <- tissues_wk12_weight %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend)) %>%
+  group_by(Sex, name, Legend) %>%
+  nest() %>%
+  mutate(n = map_dbl(data, ~ sum(!is.na(as.numeric(.x$value)))),  
+         
+         G = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[1]]
+           } else {
+             NA  
+           }
+         }),
+         U = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[2]]
+           } else {
+             NA
+           }
+         }),
+         grubbs = map(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$alternative
+           } else {
+             NA
+           }
+         }),
+         p_grubbs = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$p.value
+           } else {
+             NA
+           }
+         })) %>%
+  mutate(G = ifelse(is.na(G), NA, signif(G, 3)),
+         U = ifelse(is.na(U), NA, signif(U, 3)),
+         grubbs = ifelse(is.na(grubbs), NA, unlist(grubbs)),
+         p_grubbs = ifelse(is.na(p_grubbs), NA, signif(p_grubbs, 3))) %>%
+  
+  dplyr::select(-data) %>%
+  arrange(p_grubbs) %>%
+  write.csv(x = ., 
+          path = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_tissues_wk12_weight_grubbs.csv")
+
+#Plotting Figure S5D--------------
+
+#Tissues weight
+tissues_wk12_weight_wo_outliers <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/tissues_wk12_weight_wo_outliers.csv")
+
+tissues_weight_normal_bw_wk12_wo_outliers = tissues_wk12_weight_wo_outliers %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend)) %>%
+  filter(str_detect(name, "GonWAT_BW|MesWAT_BW|BAT_BW|Liver_BW|Caecum_BW")) %>%
+  filter(!name %in% c("SmallIntestine", "Colon", "gonWAT", "MesWAT", 
+                      "BAT", "Liver", "Caecum", "SmallIntestine", "Colon")) %>% 
+  mutate(name = case_when(name == "GonWAT_BW" ~ "Gonadal WAT", name == "MesWAT_BW" ~ "Mesenteric WAT", 
+                          name == "BAT_BW" ~ "BAT", name == "Liver_BW" ~ "Liver",
+                          name == "Caecum_BW" ~ "Caecum")) %>% 
+  ggplot() +
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +      
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Tissue Weight/Body weight")
+
+print(tissues_weight_normal_bw_wk12_wo_outliers)
+
+#Tissues length
+tissues_length_norm_bw_wk12_wo_outliers = tissues_wk12_weight_wo_outliers %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS",
+                                    "HFHS 1472"))) %>%
+  mutate(Legend = recode_factor(Legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>%
+  mutate(Legend = factor(Legend, levels = c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Mouse_ID, Name, Cage.Litter, Sex, Cohort, Diet, Treatment, Legend)) %>%
+  filter(str_detect(name, "SmallIntestine_BW|Colon_BW")) %>%
+  filter(!name %in% c("gonWAT", "MesWAT", "BAT", "Liver", "Caecum", "gonWAT_BW", "MesWAT_BW", 
+                      "BAT_BW", "Liver_BW", "Caecum_BW", "SmallIntestine", "Colon")) %>% 
+  mutate(name = case_when(name == "SmallIntestine_BW" ~ "Small Intestine", name == "Colon_BW" ~ "Colon")) %>% 
+  
+  ggplot() +
+  
+  aes(x = Sex, y = value, fill = Legend, group = Legend, colour = Legend) +
+  
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8),  
+           width = 0.6,  
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 2, colour = "black") +     
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Tissue length/Body weight")
+
+print(tissues_length_norm_bw_wk12_wo_outliers)
+
+combine_tissues_wk12 <- grid.arrange(tissues_weight_normal_bw_wk12_wo_outliers, tissues_length_norm_bw_wk12_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS5D.svg", 
+       plot = combine_tissues_wk12, 
+       device = "svg")
+
+#Plotting Figure S5E-------------
+
+wk_12_Pups_molecularELISA_striatum_wo_outliers <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/wk_12_Pups_molecularELISA_striatum_wo_outliers.csv")
+
+active_ghrl_HYP_fresh_wk12pups_wo_outliers = wk_12_Pups_molecularELISA_striatum_wo_outliers %>% 
+  mutate(legend = recode_factor(legend,
+                                "HFHS 1472" = "HFHS B. longum APC1472")) %>% 
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(ID, sex, cohort, cage, diet, treatment, legend)) %>% 
+  filter(str_detect(name, "active_ghrelin")) %>% 
+  mutate(name = case_when(name == "active_ghrelin" ~ "Active Ghrelin")) %>% 
+  ggplot() +
+  aes(x = sex, y = value, fill = legend, group = legend, colour = legend) +
+  
+  geom_bar(stat = "summary", 
+           fun = "mean",
+           position = position_dodge(0.8), 
+           width = 0.6, 
+           colour = "black") +
+  stat_summary(geom = "errorbar", fun.data = mean_se,
+               position = position_dodge(0.8),  
+               width = 0.25, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed')+
+  geom_point(shape = 21, position = position_dodge(0.8), stroke = 1, size = 3, colour = "black") +     
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"),drop=FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  scale_y_continuous(limits = c(0, 3)) +  
+  theme_bw() +
+  xlab(NULL) +
+  ylab("Concentration (pg/ml)")
+
+print(active_ghrl_HYP_fresh_wk12pups_wo_outliers)
+
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS5E.svg", 
+       plot = active_ghrl_HYP_fresh_wk12pups_wo_outliers, 
+       device = "svg",
+       width = 7,    
+       height = 5    
+)
