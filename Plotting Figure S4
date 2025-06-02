@@ -202,7 +202,7 @@ print(averagemealsize_nooutliers)
 
 combine_sign_phecomp_wk12 <- grid.arrange(eatingrate_nooutliers, firstmealsize_nooutliers, averagemealsize_nooutliers, ncol = 3)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure4A.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure4A.svg", 
        plot = combine_sign_phecomp_wk12, 
        device = "svg")
 
@@ -328,7 +328,7 @@ HPLC_striatum_fresh_wk12pups_wo_outliers = wk_12_Pups_molecularELISA_striatum_wo
   )
 print(HPLC_striatum_fresh_wk12pups_wo_outliers)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure4B.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure4B.svg", 
        plot = HPLC_striatum_fresh_wk12pups_wo_outliers, 
        device = "svg",
        width = 14,    
@@ -380,7 +380,7 @@ CORT_HYP_fresh_wk12pups_wo_outliers = wk_12_Pups_molecularELISA_striatum_wo_outl
 
 print(CORT_HYP_fresh_wk12pups_wo_outliers)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure4C.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure4C.svg", 
        plot = CORT_HYP_fresh_wk12pups_wo_outliers, 
        device = "svg",
        width = 7,    
@@ -429,7 +429,7 @@ locomotoractivity_12h_wk10_wo_outliers = data_Wk10_without_outliers %>%
 
 print(locomotoractivity_12h_wk10_wo_outliers)
 
-ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/outputs/figures/Figure4D.svg", 
+ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/Figure4D.svg", 
        plot = locomotoractivity_12h_wk10_wo_outliers, 
        device = "svg",
        width = 7,    
