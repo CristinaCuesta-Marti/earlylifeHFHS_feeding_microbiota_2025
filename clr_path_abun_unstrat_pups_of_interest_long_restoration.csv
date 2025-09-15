@@ -1,0 +1,73 @@
+pathway,sex,timepoint,statistic_diet,p.adj_diet,statistic_treatment_FOSGOS,p.adj_treatment_FOSGOS,statistic_treatment_1472,p.adj_treatment_1472,restoration_FOSGOS,restoration_1472,metacyc_of_interest,X
+ARG+POLYAMINE-SYN,F,w10,-1.464623373,0.157,4.252357528,0.002,-0.088429924,0.93,not restored,not restored,arginine_metacyc,superpathway of arginine and polyamine biosynthesis
+ARG+POLYAMINE-SYN,F,w5,-2.231819948,0.036,3.892040133,0.003,2.354624117,0.056,restored,not restored,arginine_metacyc,superpathway of arginine and polyamine biosynthesis
+ARG+POLYAMINE-SYN,M,w10,1.315833662,0.206,0.205211701,1,-0.562124705,1,not restored,not restored,arginine_metacyc,superpathway of arginine and polyamine biosynthesis
+ARG+POLYAMINE-SYN,M,w5,-4.160821239,0.000436,3.603658011,0.005,0.59526127,0.558,restored,not restored,arginine_metacyc,superpathway of arginine and polyamine biosynthesis
+ARGDEG-PWY,F,w10,1.530187673,0.141,0.351074286,1,-0.216866263,1,not restored,not restored,arginine_metacyc,"superpathway of L-arginine, putrescine, and 4-aminobutanoate degradation"
+ARGDEG-PWY,F,w5,2.26226532,0.039,-1.189277114,0.741,-0.549796647,1,not restored,not restored,arginine_metacyc,"superpathway of L-arginine, putrescine, and 4-aminobutanoate degradation"
+ARGDEG-PWY,M,w10,-0.02656684,0.979,0.804441833,1,0.053805283,1,not restored,not restored,arginine_metacyc,"superpathway of L-arginine, putrescine, and 4-aminobutanoate degradation"
+ARGDEG-PWY,M,w5,2.374987776,0.032,1.20748071,0.732,0.334298,0.742,not restored,not restored,arginine_metacyc,"superpathway of L-arginine, putrescine, and 4-aminobutanoate degradation"
+ARGORNPROST-PWY,F,w10,-3.493258088,0.003,11.98731879,1.39E-10,0.577678243,0.571,restored,not restored,arginine_metacyc,"arginine, ornithine and proline interconversion"
+ARGORNPROST-PWY,F,w5,-4.902529847,0.000257,7.420828877,9.96E-07,3.219556879,0.004,restored,restored,arginine_metacyc,"arginine, ornithine and proline interconversion"
+ARGORNPROST-PWY,M,w10,0.82406177,0.419,4.704389526,0.000218,-1.674148468,0.108,not restored,not restored,arginine_metacyc,"arginine, ornithine and proline interconversion"
+ARGORNPROST-PWY,M,w5,-5.381216769,7.88E-05,2.503891321,0.062,0.393304754,0.699,not restored,not restored,arginine_metacyc,"arginine, ornithine and proline interconversion"
+ARGSYN-PWY,F,w10,-1.876240009,0.074,-0.646201934,1,-0.241725297,1,not restored,not restored,arginine_metacyc,L-arginine biosynthesis I (via L-ornithine)
+ARGSYN-PWY,F,w5,-2.179032838,0.046,1.298392853,0.416,-0.489010524,0.63,not restored,not restored,arginine_metacyc,L-arginine biosynthesis I (via L-ornithine)
+ARGSYN-PWY,M,w10,0.116580877,0.908,-2.74743204,0.039,-0.681756596,0.503,not restored,not restored,arginine_metacyc,L-arginine biosynthesis I (via L-ornithine)
+ARGSYN-PWY,M,w5,-1.093831984,0.29,-3.012613069,0.019,-1.69095957,0.21,not restored,not restored,arginine_metacyc,L-arginine biosynthesis I (via L-ornithine)
+ARGSYNBSUB-PWY,F,w10,-1.653286317,0.113,-0.961855644,0.7,0.061684609,0.951,not restored,not restored,arginine_metacyc,L-arginine biosynthesis II (acetyl cycle)
+ARGSYNBSUB-PWY,F,w5,-2.211190713,0.044,1.333994106,0.392,-0.6053797,0.551,not restored,not restored,arginine_metacyc,L-arginine biosynthesis II (acetyl cycle)
+ARGSYNBSUB-PWY,M,w10,0.061260388,0.952,-3.307793841,0.012,-0.217420382,0.83,not restored,not restored,arginine_metacyc,L-arginine biosynthesis II (acetyl cycle)
+ARGSYNBSUB-PWY,M,w5,-0.831380922,0.417,-3.50869928,0.007,-2.156208121,0.088,not restored,not restored,arginine_metacyc,L-arginine biosynthesis II (acetyl cycle)
+AST-PWY,F,w10,1.519209201,0.144,-0.030681563,1,-0.395010643,1,not restored,not restored,arginine_metacyc,L-arginine degradation II (AST pathway)
+AST-PWY,F,w5,2.493590755,0.025,-1.585526434,0.381,-0.753775174,0.784,not restored,not restored,arginine_metacyc,L-arginine degradation II (AST pathway)
+AST-PWY,M,w10,-0.031318818,0.975,0.441636867,1,0.065542416,1,not restored,not restored,arginine_metacyc,L-arginine degradation II (AST pathway)
+AST-PWY,M,w5,2.451947087,0.028,-0.002049171,1,0.183943257,1,not restored,not restored,arginine_metacyc,L-arginine degradation II (AST pathway)
+FAO-PWY,F,w10,-1.34077799,0.198,4.206977306,0.004,2.127423589,0.045,not restored,not restored,fatty_acid_metacyc,fatty acid &beta;-oxidation I
+FAO-PWY,F,w5,-3.271036544,0.005,5.934010948,0.000138,0.930843079,0.365,restored,not restored,fatty_acid_metacyc,fatty acid &beta;-oxidation I
+FAO-PWY,M,w10,-4.248122732,0.000354,5.57201385,0.000205,2.135376324,0.044,restored,restored,fatty_acid_metacyc,fatty acid &beta;-oxidation I
+FAO-PWY,M,w5,-1.509061832,0.146,2.56088904,0.043,-0.721220776,0.478,not restored,not restored,fatty_acid_metacyc,fatty acid &beta;-oxidation I
+FASYN-ELONG-PWY,F,w10,-1.969293942,0.065,-1.217746193,0.579,-1.346598823,0.579,not restored,not restored,fatty_acid_metacyc,fatty acid elongation -- saturated
+FASYN-ELONG-PWY,F,w5,-0.293056468,0.773,-0.256491005,0.8,-1.430892685,0.498,not restored,not restored,fatty_acid_metacyc,fatty acid elongation -- saturated
+FASYN-ELONG-PWY,M,w10,-1.336783929,0.195,1.266869332,0.444,-0.304553766,0.764,not restored,not restored,fatty_acid_metacyc,fatty acid elongation -- saturated
+FASYN-ELONG-PWY,M,w5,-2.222746101,0.037,2.49849589,0.056,0.169661712,0.867,not restored,not restored,fatty_acid_metacyc,fatty acid elongation -- saturated
+FASYN-INITIAL-PWY,F,w10,2.581893509,0.017,-8.072882757,6.75E-06,-0.731146183,0.476,restored,not restored,fatty_acid_metacyc,superpathway of fatty acid biosynthesis initiation (E. coli)
+FASYN-INITIAL-PWY,F,w5,0.4118005,0.684,-3.070128867,0.017,-0.344094789,0.736,not restored,not restored,fatty_acid_metacyc,superpathway of fatty acid biosynthesis initiation (E. coli)
+FASYN-INITIAL-PWY,M,w10,-0.192568869,0.85,-2.253161456,0.082,0.523922407,0.606,not restored,not restored,fatty_acid_metacyc,superpathway of fatty acid biosynthesis initiation (E. coli)
+FASYN-INITIAL-PWY,M,w5,-1.0301919,0.314,1.844757999,0.256,1.256256315,0.446,not restored,not restored,fatty_acid_metacyc,superpathway of fatty acid biosynthesis initiation (E. coli)
+NADSYN-PWY,F,w10,-0.209776987,0.837,-1.077839738,0.771,0.265237363,0.793,not restored,not restored,tryptophan_metacyc,NAD biosynthesis II (from tryptophan)
+NADSYN-PWY,F,w5,0.620672613,0.545,-2.358895395,0.09,-1.27199287,0.37,not restored,not restored,tryptophan_metacyc,NAD biosynthesis II (from tryptophan)
+NADSYN-PWY,M,w10,0.006740561,0.995,-1.905399217,0.184,-0.066043194,0.948,not restored,not restored,tryptophan_metacyc,NAD biosynthesis II (from tryptophan)
+NADSYN-PWY,M,w5,-1.199420415,0.244,-0.790379877,0.874,-1.787084668,0.277,not restored,not restored,tryptophan_metacyc,NAD biosynthesis II (from tryptophan)
+ORNARGDEG-PWY,F,w10,1.530187673,0.141,0.351074286,1,-0.216866263,1,not restored,not restored,arginine_metacyc,superpathway of L-arginine and L-ornithine degradation
+ORNARGDEG-PWY,F,w5,2.26226532,0.039,-1.189277114,0.741,-0.549796647,1,not restored,not restored,arginine_metacyc,superpathway of L-arginine and L-ornithine degradation
+ORNARGDEG-PWY,M,w10,-0.02656684,0.979,0.804441833,1,0.053805283,1,not restored,not restored,arginine_metacyc,superpathway of L-arginine and L-ornithine degradation
+ORNARGDEG-PWY,M,w5,2.374987776,0.032,1.20748071,0.732,0.334298,0.742,not restored,not restored,arginine_metacyc,superpathway of L-arginine and L-ornithine degradation
+PWY-5154,F,w10,-0.957551707,0.349,-2.448114534,0.074,-1.433150559,0.33,not restored,not restored,arginine_metacyc,L-arginine biosynthesis III (via N-acetyl-L-citrulline)
+PWY-5154,F,w5,0.061561524,0.951,-2.320802732,0.09,-2.179902994,0.09,not restored,not restored,arginine_metacyc,L-arginine biosynthesis III (via N-acetyl-L-citrulline)
+PWY-5154,M,w10,-0.837452701,0.412,0.158708048,1,-0.102792611,1,not restored,not restored,arginine_metacyc,L-arginine biosynthesis III (via N-acetyl-L-citrulline)
+PWY-5154,M,w5,-0.201492873,0.842,0.352947119,1,-0.693139617,1,not restored,not restored,arginine_metacyc,L-arginine biosynthesis III (via N-acetyl-L-citrulline)
+PWY-5651,F,w10,-0.209776987,0.837,-1.077839738,0.771,0.265237363,0.793,not restored,not restored,tryptophan_metacyc,L-tryptophan degradation to 2-amino-3-carboxymuconate semialdehyde
+PWY-5651,F,w5,0.620672613,0.545,-2.358895395,0.09,-1.27199287,0.37,not restored,not restored,tryptophan_metacyc,L-tryptophan degradation to 2-amino-3-carboxymuconate semialdehyde
+PWY-5651,M,w10,0.006740561,0.995,-1.905399217,0.184,-0.066043194,0.948,not restored,not restored,tryptophan_metacyc,L-tryptophan degradation to 2-amino-3-carboxymuconate semialdehyde
+PWY-5651,M,w5,-1.199420415,0.244,-0.790379877,0.874,-1.787084668,0.277,not restored,not restored,tryptophan_metacyc,L-tryptophan degradation to 2-amino-3-carboxymuconate semialdehyde
+PWY-6562,F,w10,0.353375606,0.729,-1.077839738,0.885,-0.532743058,1,not restored,not restored,spermidine_metacyc,norspermidine biosynthesis
+PWY-6562,F,w5,0.620672613,0.545,-2.358895395,0.09,-1.27199287,0.37,not restored,not restored,spermidine_metacyc,norspermidine biosynthesis
+PWY-6562,M,w10,0.006740561,0.995,-1.905399217,0.184,-0.066043194,0.948,not restored,not restored,spermidine_metacyc,norspermidine biosynthesis
+PWY-6562,M,w5,-1.199420415,0.244,-1.839780155,0.247,-1.787084668,0.247,not restored,not restored,spermidine_metacyc,norspermidine biosynthesis
+PWY-6629,F,w10,1.540158686,0.139,0.416452233,1,-0.27758931,1,not restored,not restored,tryptophan_metacyc,superpathway of L-tryptophan biosynthesis
+PWY-6629,F,w5,1.93243615,0.071,-0.759628524,1,-0.328340968,1,not restored,not restored,tryptophan_metacyc,superpathway of L-tryptophan biosynthesis
+PWY-6629,M,w10,-0.017721785,0.986,1.201647322,0.75,0.034390084,0.973,not restored,not restored,tryptophan_metacyc,superpathway of L-tryptophan biosynthesis
+PWY-6629,M,w5,2.248066176,0.039,1.354574534,0.597,0.453150692,0.656,not restored,not restored,tryptophan_metacyc,superpathway of L-tryptophan biosynthesis
+PWY-7094,F,w10,2.289996072,0.041,-2.925451268,0.038,-0.739204514,0.471,restored,not restored,fatty_acid_metacyc,fatty acid salvage
+PWY-7094,F,w5,2.387147417,0.033,-2.358895395,0.09,-1.27199287,0.37,not restored,not restored,fatty_acid_metacyc,fatty acid salvage
+PWY-7094,M,w10,-1.625745924,0.123,-1.440911119,0.256,1.607107869,0.256,not restored,not restored,fatty_acid_metacyc,fatty acid salvage
+PWY-7094,M,w5,-2.058878576,0.06,0.223061684,1,-0.482500408,1,not restored,not restored,fatty_acid_metacyc,fatty acid salvage
+PWY-7400,F,w10,-1.872598397,0.074,-0.657573822,1,-0.256864358,1,not restored,not restored,arginine_metacyc,L-arginine biosynthesis IV (archaebacteria)
+PWY-7400,F,w5,-2.169333014,0.047,1.2768424,0.43,-0.499960189,0.622,not restored,not restored,arginine_metacyc,L-arginine biosynthesis IV (archaebacteria)
+PWY-7400,M,w10,0.110511563,0.913,-2.718629559,0.041,-0.678263463,0.505,not restored,not restored,arginine_metacyc,L-arginine biosynthesis IV (archaebacteria)
+PWY-7400,M,w5,-1.081467876,0.296,-3.012231866,0.019,-1.701218513,0.206,not restored,not restored,arginine_metacyc,L-arginine biosynthesis IV (archaebacteria)
+TRPSYN-PWY,F,w10,-0.437507934,0.666,-3.640580587,0.007,-1.233858364,0.23,not restored,not restored,tryptophan_metacyc,L-tryptophan biosynthesis
+TRPSYN-PWY,F,w5,-2.013316089,0.058,-1.999849045,0.174,-1.865247801,0.174,not restored,not restored,tryptophan_metacyc,L-tryptophan biosynthesis
+TRPSYN-PWY,M,w10,-0.174617958,0.863,-2.725976934,0.029,-0.51153105,0.615,not restored,not restored,tryptophan_metacyc,L-tryptophan biosynthesis
+TRPSYN-PWY,M,w5,-1.811848935,0.084,-2.258708197,0.103,-0.538971951,0.596,not restored,not restored,tryptophan_metacyc,L-tryptophan biosynthesis

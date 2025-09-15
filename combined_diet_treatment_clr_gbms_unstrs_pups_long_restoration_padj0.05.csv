@@ -1,0 +1,169 @@
+module_name,sex,timepoint,statistic_diet,p.adj_diet,statistic_treatment_FOSGOS,p.adj_treatment_FOSGOS,statistic_treatment_1472,p.adj_treatment_1472,restoration_FOSGOS,restoration_1472
+Dopamine degradation,F,w10,3.192164322,0.004,-4.779367251,0.000277,-0.978519318,0.338,restored,not restored
+Tryptophan degradation,F,w10,-2.605615777,0.018,3.407445494,0.008,-0.570526181,0.574,restored,not restored
+17-beta-Estradiol degradation,F,w10,-2.294077079,0.034,2.904620869,0.026,0.315689591,0.755,restored,not restored
+Glutamate degradation I,F,w10,-2.133117796,0.044,6.83319271,1.39E-05,0.066127674,0.948,restored,not restored
+Inositol degradation,F,w10,-2.186886412,0.044,7.929725642,1.10E-06,0.815082717,0.429,restored,not restored
+Butyrate synthesis I,F,w10,-2.019288349,0.056,3.555939815,0.004,-1.917920623,0.068,not restored,not restored
+Histamine degradation,F,w10,1.668393092,0.111,0.281082701,1,-0.258791731,1,not restored,not restored
+Menaquinone synthesis (vitamin K2) II (alternative pathway: futalosine pathway),F,w10,-1.626053538,0.122,2.427676503,0.048,-1.316495041,0.202,not restored,not restored
+Butyrate synthesis II,F,w10,-1.570635279,0.131,4.174666495,0.002,0.322168801,0.75,not restored,not restored
+Acetate degradation,F,w10,1.550218758,0.136,-3.903256692,0.003,-2.075258149,0.099,not restored,not restored
+S-Adenosylmethionine (SAM) synthesis,F,w10,-1.553970579,0.137,1.627485759,0.236,-1.368313112,0.236,not restored,not restored
+ClpB (ATP-dependent chaperone protein),F,w10,-1.480679041,0.155,0.654392906,0.52,-1.60465392,0.246,not restored,not restored
+GABA synthesis I,F,w10,1.456007609,0.16,-2.250968897,0.099,-0.062566863,0.951,not restored,not restored
+Acetate synthesis I,F,w10,-1.30701136,0.206,0.795305725,0.438,-1.26604732,0.438,not restored,not restored
+p-Cresol degradation,F,w10,1.244565033,0.233,-1.026009227,0.951,-0.593232811,1,not restored,not restored
+Isovaleric acid synthesis II (KADC pathway),F,w10,-1.165749624,0.258,0.714375087,0.483,-1.367962127,0.37,not restored,not restored
+Kynurenine synthesis,F,w10,-1.10341127,0.282,5.090105297,0.000197,1.021884754,0.318,not restored,not restored
+GABA degradation,F,w10,-1.037867448,0.313,5.378894031,0.000184,0.678106307,0.505,not restored,not restored
+Inositol synthesis,F,w10,0.965672106,0.345,-5.739587308,2.90E-05,-1.902085545,0.099,not restored,not restored
+Nitric oxide degradation I (NO dioxygenase),F,w10,-0.934530148,0.361,-3.937019784,0.004,0.756642076,0.458,not restored,not restored
+Isovaleric acid synthesis I (KADH pathway),F,w10,-0.860707522,0.401,-0.250373483,0.816,-1.226225866,0.702,not restored,not restored
+Propionate synthesis I,F,w10,-0.846353242,0.406,1.694749742,0.191,3.258542825,0.01,not restored,not restored
+GABA synthesis II,F,w10,0.769155573,0.45,-0.882646355,1,-0.374314349,1,not restored,not restored
+Propionate synthesis II,F,w10,-0.77056024,0.45,7.022343203,9.94E-07,0.420440984,0.678,not restored,not restored
+DOPAC synthesis,F,w10,-0.74970251,0.461,1.264838192,0.438,-0.965836773,0.438,not restored,not restored
+Glutamate synthesis II,F,w10,0.687701537,0.499,-3.25105859,0.015,-1.868649608,0.149,not restored,not restored
+Acetate synthesis III,F,w10,-0.632734699,0.533,-0.339728434,0.737,-1.378534911,0.543,not restored,not restored
+Acetate synthesis II,F,w10,-0.632044072,0.534,-0.334294295,0.741,-1.379548613,0.543,not restored,not restored
+Quinolinic acid degradation,F,w10,-0.623949409,0.54,-1.241073292,0.456,-1.730243955,0.292,not restored,not restored
+GABA synthesis III,F,w10,0.557307567,0.583,-3.296459852,0.01,-1.469080032,0.314,not restored,not restored
+Glutamate synthesis I,F,w10,-0.451381594,0.656,-1.464986287,0.372,-1.603331018,0.372,not restored,not restored
+p-Cresol synthesis,F,w10,-0.414140992,0.683,-3.757482412,0.004,-2.236175414,0.071,not restored,not restored
+Tryptophan synthesis,F,w10,0.372164385,0.713,-3.58924124,0.006,-1.568416974,0.22,not restored,not restored
+Propionate degradation I,F,w10,-0.350405175,0.73,0.242715492,0.811,1.551457463,0.405,not restored,not restored
+Nitric oxide synthesis I (NO synthase),F,w10,-0.284541018,0.779,-0.198657591,1,-0.17413269,1,not restored,not restored
+g-Hydroxybutyric acid (GHB) degradation,F,w10,0.246582698,0.808,-0.584190365,1,0.527470943,1,not restored,not restored
+Menaquinone synthesis (vitamin K2) I,F,w10,0.223903994,0.825,-3.406825078,0.009,-2.786737224,0.022,not restored,not restored
+Acetate synthesis IV,F,w10,0.184136134,0.856,-1.026009227,0.951,-0.593232811,1,not restored,not restored
+Kynurenine degradation,F,w10,0.184136134,0.856,-1.026009227,0.951,0.016037397,0.987,not restored,not restored
+Nitric oxide degradation II (NO reductase),F,w10,0.184136134,0.856,-1.607097314,0.372,0.016037397,0.987,not restored,not restored
+Quinolinic acid synthesis,F,w10,-0.155483859,0.878,-2.166532006,0.128,-1.83816373,0.158,not restored,not restored
+Propionate synthesis III,F,w10,0.095751617,0.925,-1.757383389,0.186,-2.512476739,0.058,not restored,not restored
+Butyrate synthesis I,F,w5,-8.57618341,3.76E-08,7.969093972,2.82E-07,1.316608311,0.204,restored,not restored
+Glutamate degradation I,F,w5,-5.795668863,3.19E-05,6.88832326,8.07E-06,1.477653527,0.153,restored,not restored
+Butyrate synthesis II,F,w5,-5.647411412,4.02E-05,5.576054361,0.00013,0.351291942,0.729,restored,not restored
+p-Cresol synthesis,F,w5,-5.063122757,4.86E-05,-0.530843099,1,-0.925831688,1,not restored,not restored
+Acetate synthesis II,F,w5,-4.294727513,0.000309,5.147559232,0.000133,-0.16522514,0.87,restored,not restored
+Acetate synthesis III,F,w5,-4.293558272,0.00031,5.149247635,0.000132,-0.165418471,0.87,restored,not restored
+Tryptophan degradation,F,w5,-4.176900095,0.000435,6.121192387,1.22E-05,2.126225129,0.045,restored,restored
+Dopamine degradation,F,w5,4.367503618,0.000479,-6.948414263,2.79E-05,-0.833499638,0.417,restored,not restored
+Propionate synthesis I,F,w5,3.625840683,0.002,-3.35286452,0.006,1.359917577,0.188,restored,not restored
+Inositol synthesis,F,w5,3.347702173,0.004,-4.660025859,0.000405,-3.490830869,0.004,restored,restored
+GABA synthesis III,F,w5,3.089386885,0.006,-2.893595313,0.025,-1.900737569,0.141,restored,not restored
+Nitric oxide degradation I (NO dioxygenase),F,w5,-3.211865886,0.006,0.155804867,0.878,2.397935533,0.05,not restored,not restored
+Propionate synthesis II,F,w5,-3.102802691,0.007,6.395746313,1.14E-05,-0.864614983,0.398,restored,not restored
+Nitric oxide synthesis I (NO synthase),F,w5,-2.896481029,0.009,4.250733047,0.002,2.55649884,0.038,restored,restored
+ClpB (ATP-dependent chaperone protein),F,w5,-2.662966207,0.016,4.725272264,0.000309,-0.337048581,0.739,restored,not restored
+DOPAC synthesis,F,w5,-2.578862407,0.022,5.251092916,0.000154,0.668005586,0.511,restored,not restored
+S-Adenosylmethionine (SAM) synthesis,F,w5,-2.424224361,0.027,5.3398494,7.32E-05,-0.49179118,0.628,restored,not restored
+GABA degradation,F,w5,2.316430919,0.03,5.245073037,8.76E-05,1.0443168,0.308,not restored,not restored
+Histamine degradation,F,w5,2.405374723,0.031,-1.252238249,0.672,-0.988855973,0.672,not restored,not restored
+Isovaleric acid synthesis II (KADC pathway),F,w5,-2.136353464,0.048,4.254668002,0.001,-0.508212051,0.616,restored,not restored
+Menaquinone synthesis (vitamin K2) II (alternative pathway: futalosine pathway),F,w5,1.707184533,0.104,1.428735472,0.34,-1.085303303,0.34,not restored,not restored
+Quinolinic acid synthesis,F,w5,-1.583289081,0.128,-2.353533533,0.056,-2.998824324,0.02,not restored,not restored
+Acetate synthesis I,F,w5,-1.436103743,0.167,3.516255302,0.004,-0.96575185,0.344,not restored,not restored
+Glutamate synthesis II,F,w5,-1.407554629,0.174,-1.601029236,0.248,-2.361737577,0.082,not restored,not restored
+GABA synthesis I,F,w5,1.411454145,0.176,-0.637686905,1,0.416542513,1,not restored,not restored
+Tryptophan synthesis,F,w5,-1.289726602,0.211,-1.150266969,0.264,-2.550001931,0.054,not restored,not restored
+g-Hydroxybutyric acid (GHB) degradation,F,w5,1.094205293,0.289,-2.723073483,0.028,0.09554085,0.925,not restored,not restored
+Propionate degradation I,F,w5,0.877756328,0.39,-1.007631726,0.656,0.81523477,0.656,not restored,not restored
+Propionate synthesis III,F,w5,-0.841232319,0.409,0.009581929,0.992,-1.52708649,0.42,not restored,not restored
+Kynurenine degradation,F,w5,0.842764301,0.413,-1.720864285,0.21,-2.066308202,0.151,not restored,not restored
+Nitric oxide degradation II (NO reductase),F,w5,0.842764301,0.413,-1.720864285,0.21,-2.066308202,0.151,not restored,not restored
+p-Cresol degradation,F,w5,0.842764301,0.413,-1.720864285,0.21,-2.066308202,0.151,not restored,not restored
+Quinolinic acid degradation,F,w5,-0.727182939,0.477,0.328807372,0.745,-2.29275196,0.063,not restored,not restored
+17-beta-Estradiol degradation,F,w5,-0.674030945,0.51,2.929809203,0.016,-1.235864773,0.229,not restored,not restored
+Acetate synthesis IV,F,w5,0.621609113,0.543,-1.067847544,0.596,-1.72972722,0.296,not restored,not restored
+Isovaleric acid synthesis I (KADH pathway),F,w5,-0.610593337,0.55,2.41247058,0.049,-1.51376526,0.144,not restored,not restored
+Menaquinone synthesis (vitamin K2) I,F,w5,0.553203438,0.586,-0.803006873,0.864,-1.861144331,0.228,not restored,not restored
+GABA synthesis II,F,w5,0.495643926,0.628,0.970813545,0.594,-1.293619415,0.594,not restored,not restored
+Inositol degradation,F,w5,-0.370054352,0.715,1.597940797,0.387,0.050161354,0.961,not restored,not restored
+Kynurenine synthesis,F,w5,-0.324550405,0.75,4.184866988,0.002,-1.061107903,0.3,not restored,not restored
+Glutamate synthesis I,F,w5,-0.180260458,0.859,-0.644772994,0.526,-2.634356057,0.045,not restored,not restored
+Acetate degradation,F,w5,-0.120513465,0.905,-1.628996578,0.236,-2.666574536,0.045,not restored,not restored
+Propionate synthesis I,M,w10,2.718814649,0.015,-3.961703055,0.002,0.077560565,0.939,restored,not restored
+DOPAC synthesis,M,w10,1.700561227,0.105,-3.2409549,0.016,-1.304039748,0.208,not restored,not restored
+Propionate synthesis II,M,w10,-1.512358437,0.145,7.814467001,5.91E-07,-0.453048297,0.655,not restored,not restored
+Kynurenine synthesis,M,w10,-1.415789659,0.171,3.498878898,0.007,0.215772449,0.831,not restored,not restored
+Nitric oxide synthesis I (NO synthase),M,w10,-1.443737326,0.171,0.701335338,0.988,1.051586089,0.924,not restored,not restored
+Dopamine degradation,M,w10,-1.161359081,0.26,-4.553210241,0.00058,-0.19224309,0.849,not restored,not restored
+GABA synthesis II,M,w10,-1.07373663,0.296,0.286426561,1,-0.19388269,1,not restored,not restored
+Isovaleric acid synthesis II (KADC pathway),M,w10,0.859931064,0.403,-0.929480517,1,-0.904130994,1,not restored,not restored
+p-Cresol synthesis,M,w10,-0.842111545,0.413,-1.240578808,0.693,-0.616216963,0.693,not restored,not restored
+Quinolinic acid degradation,M,w10,0.820541357,0.424,-0.704766264,1,-0.84769627,1,not restored,not restored
+Inositol synthesis,M,w10,0.751937643,0.462,-2.733192059,0.031,0.550610124,0.588,not restored,not restored
+Butyrate synthesis I,M,w10,-0.740378281,0.467,5.197753717,5.74E-05,-2.144823177,0.045,not restored,not restored
+Tryptophan degradation,M,w10,0.702811636,0.49,4.29142351,0.001,-1.937432864,0.068,not restored,not restored
+17-beta-Estradiol degradation,M,w10,0.683439906,0.504,-0.465244623,1,-0.486498588,1,not restored,not restored
+Glutamate synthesis II,M,w10,0.633285273,0.536,-1.895285778,0.224,-0.523665404,0.606,not restored,not restored
+GABA degradation,M,w10,-0.627305254,0.539,4.983379928,0.000548,1.207733106,0.244,not restored,not restored
+S-Adenosylmethionine (SAM) synthesis,M,w10,0.594655056,0.561,0.451231829,0.734,-0.926156003,0.734,not restored,not restored
+Butyrate synthesis II,M,w10,-0.579494695,0.568,3.890341813,0.002,-1.771037638,0.091,not restored,not restored
+Tryptophan synthesis,M,w10,0.518357887,0.612,-2.086734121,0.136,-0.381984348,0.707,not restored,not restored
+Inositol degradation,M,w10,-0.506495547,0.619,9.794193877,2.10E-08,-1.310706236,0.206,not restored,not restored
+Isovaleric acid synthesis I (KADH pathway),M,w10,0.495994744,0.628,0.272154878,1,-0.430092874,1,not restored,not restored
+Menaquinone synthesis (vitamin K2) II (alternative pathway: futalosine pathway),M,w10,0.458272712,0.651,3.3339973,0.006,-0.891699068,0.383,not restored,not restored
+GABA synthesis I,M,w10,0.402838539,0.691,0.110590618,1,0.464476922,1,not restored,not restored
+Acetate synthesis III,M,w10,-0.391860228,0.7,0.551111823,1,-0.185675611,1,not restored,not restored
+Acetate synthesis II,M,w10,-0.390655462,0.701,0.544541417,1,-0.187940311,1,not restored,not restored
+ClpB (ATP-dependent chaperone protein),M,w10,0.369299729,0.717,0.251125362,0.988,-0.698417162,0.988,not restored,not restored
+Acetate degradation,M,w10,-0.364091649,0.72,-0.491484454,1,-0.090908554,1,not restored,not restored
+Propionate degradation I,M,w10,-0.342990054,0.736,2.425488716,0.048,3.274053108,0.015,not restored,not restored
+Acetate synthesis I,M,w10,-0.330479412,0.746,0.918655693,0.744,-0.022371687,0.982,not restored,not restored
+Quinolinic acid synthesis,M,w10,-0.296244666,0.77,-0.196992144,0.846,-1.367861275,0.558,not restored,not restored
+Acetate synthesis IV,M,w10,0.225386499,0.824,-2.134150082,0.131,-0.048024523,0.962,not restored,not restored
+Kynurenine degradation,M,w10,0.225386499,0.824,-1.657740784,0.333,-0.048024523,0.962,not restored,not restored
+Nitric oxide degradation II (NO reductase),M,w10,0.225386499,0.824,-1.657740784,0.333,-0.048024523,0.962,not restored,not restored
+g-Hydroxybutyric acid (GHB) degradation,M,w10,-0.221647525,0.827,0.299336485,1,0.882551704,1,not restored,not restored
+Glutamate synthesis I,M,w10,0.22009632,0.829,0.406546362,0.888,-0.779253964,0.888,not restored,not restored
+p-Cresol degradation,M,w10,-0.20552127,0.839,-1.386179491,0.36,0.402518255,0.691,not restored,not restored
+Menaquinone synthesis (vitamin K2) I,M,w10,0.137960448,0.892,-0.391209366,1,-0.371789702,1,not restored,not restored
+Nitric oxide degradation I (NO dioxygenase),M,w10,0.128025607,0.899,-4.457477051,0.002,-0.91657796,0.369,not restored,not restored
+Histamine degradation,M,w10,0.104770994,0.918,0.635374108,1,0.077560565,1,not restored,not restored
+GABA synthesis III,M,w10,0.062813513,0.951,0.525405374,0.968,-0.711419623,0.968,not restored,not restored
+Glutamate degradation I,M,w10,-0.058562988,0.954,6.080855777,1.49E-05,-2.389099759,0.026,not restored,not restored
+Propionate synthesis III,M,w10,-0.019452357,0.985,1.753852456,0.186,-0.949882491,0.353,not restored,not restored
+Butyrate synthesis I,M,w5,-9.416973995,3.56E-09,5.300049872,0.000146,-0.073956272,0.942,restored,not restored
+p-Cresol synthesis,M,w5,-6.807796458,1.34E-06,2.861530632,0.029,1.524092832,0.27,restored,not restored
+Glutamate degradation I,M,w5,-5.782605512,2.05E-05,3.212844931,0.01,-1.217072878,0.238,restored,not restored
+Propionate synthesis I,M,w5,5.399782752,4.21E-05,-4.778563364,0.00039,-1.798106275,0.086,restored,not restored
+Butyrate synthesis II,M,w5,-4.797668802,0.000133,2.343721377,0.059,-1.789038688,0.088,not restored,not restored
+Quinolinic acid synthesis,M,w5,-4.519896468,0.000214,2.275206951,0.102,-0.022999741,0.982,not restored,not restored
+Acetate synthesis III,M,w5,-4.080614582,0.000499,3.027273148,0.018,0.856073066,0.401,restored,not restored
+Acetate synthesis II,M,w5,-4.074802879,0.000506,3.023534511,0.018,0.85404038,0.402,restored,not restored
+Propionate synthesis III,M,w5,-3.402076258,0.003,3.959467663,0.002,0.655848837,0.52,restored,not restored
+Tryptophan degradation,M,w5,-3.545005907,0.003,3.94179282,0.002,0.272336854,0.788,restored,not restored
+ClpB (ATP-dependent chaperone protein),M,w5,-2.384785398,0.026,2.5174919,0.059,0.576754996,0.57,not restored,not restored
+Acetate synthesis I,M,w5,-2.279278237,0.033,2.194038543,0.125,0.9418949,0.358,not restored,not restored
+S-Adenosylmethionine (SAM) synthesis,M,w5,-2.238089581,0.036,1.824130108,0.166,-0.00414649,0.997,not restored,not restored
+GABA synthesis I,M,w5,2.233603447,0.037,0.753048357,1,0.689228066,1,not restored,not restored
+Histamine degradation,M,w5,2.259687295,0.041,1.800057893,0.265,0.494509662,0.627,not restored,not restored
+Inositol synthesis,M,w5,2.14482617,0.043,-1.218618191,0.42,1.291492553,0.42,not restored,not restored
+Acetate degradation,M,w5,-1.942086909,0.065,1.93905707,0.195,1.138465699,0.534,not restored,not restored
+Menaquinone synthesis (vitamin K2) I,M,w5,-1.900155713,0.072,2.108107646,0.139,1.186672557,0.496,not restored,not restored
+Kynurenine degradation,M,w5,-1.664526634,0.11,0.226394376,0.823,-1.194578661,0.498,not restored,not restored
+Nitric oxide degradation II (NO reductase),M,w5,-1.664526634,0.11,0.226394376,0.823,-1.194578661,0.498,not restored,not restored
+p-Cresol degradation,M,w5,-1.664526634,0.11,0.226394376,0.823,-1.194578661,0.498,not restored,not restored
+g-Hydroxybutyric acid (GHB) degradation,M,w5,1.551751448,0.14,-1.853623136,0.154,0.391749353,0.699,not restored,not restored
+GABA degradation,M,w5,1.552443011,0.143,3.032708075,0.029,1.446111696,0.165,not restored,not restored
+Kynurenine synthesis,M,w5,1.389146717,0.179,-1.526143132,0.282,-2.19911067,0.116,not restored,not restored
+Tryptophan synthesis,M,w5,-1.35170614,0.191,-0.408576682,1,0.093574513,1,not restored,not restored
+Propionate synthesis II,M,w5,-1.340873274,0.194,0.262479737,0.795,-2.395213486,0.055,not restored,not restored
+Propionate degradation I,M,w5,1.265013419,0.219,-0.509368545,0.615,1.235555487,0.466,not restored,not restored
+Dopamine degradation,M,w5,1.193033621,0.246,-5.122820196,7.50E-05,1.33822695,0.198,not restored,not restored
+Glutamate synthesis II,M,w5,-1.197279834,0.247,-1.076755532,0.738,0.107095529,0.916,not restored,not restored
+GABA synthesis II,M,w5,1.188770311,0.251,-1.585913105,0.309,-1.729694771,0.309,not restored,not restored
+Isovaleric acid synthesis I (KADH pathway),M,w5,-1.141014036,0.266,1.979247714,0.182,0.70277974,0.49,not restored,not restored
+Nitric oxide synthesis I (NO synthase),M,w5,-1.041869771,0.31,2.226538091,0.081,-0.561027982,0.581,not restored,not restored
+Isovaleric acid synthesis II (KADC pathway),M,w5,-1.01350546,0.323,0.584964259,1,-0.085746152,1,not restored,not restored
+Quinolinic acid degradation,M,w5,-0.917910025,0.371,0.509808848,1,-0.022686048,1,not restored,not restored
+Acetate synthesis IV,M,w5,-0.850516256,0.407,0.889515816,0.383,-2.372274139,0.056,not restored,not restored
+Nitric oxide degradation I (NO dioxygenase),M,w5,-0.720850272,0.479,-1.647983891,0.275,-0.168633874,0.868,not restored,not restored
+Glutamate synthesis I,M,w5,-0.637353043,0.531,1.734595935,0.289,0.108937924,0.914,not restored,not restored
+Inositol degradation,M,w5,-0.529805672,0.602,3.497305485,0.007,0.027765002,0.978,not restored,not restored
+GABA synthesis III,M,w5,-0.444850877,0.662,2.82174362,0.03,0.765425164,0.453,not restored,not restored
+Menaquinone synthesis (vitamin K2) II (alternative pathway: futalosine pathway),M,w5,0.074420109,0.941,2.837906622,0.028,0.244068913,0.809,not restored,not restored
+DOPAC synthesis,M,w5,-0.045078141,0.965,-3.041801309,0.018,-1.030203518,0.314,not restored,not restored
+17-beta-Estradiol degradation,M,w5,-0.004578554,0.996,-1.274956824,0.579,0.028029617,0.978,not restored,not restored
