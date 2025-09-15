@@ -1,0 +1,474 @@
+library(tidyverse)
+library(dplyr)  
+library(ggplot2) 
+install.packages("patchwork")
+library(patchwork)
+install.packages("ggrepel")
+library(ggrepel) 
+install.packages("broom")
+library(broom) 
+library(car)
+library(gridExtra)
+library(tidyverse)
+library(ggnewscale)  # For multiple color scales
+
+
+   #Figure S8A------------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-diet altered females all pathways
+   
+   integrative_analyses_all_pathways_dietaltered_F = read.csv("data/metaboanalyst_all_pathways_altered_diet_females.csv")
+   
+  
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c(
+     "mTOR signaling pathway", "Axon guidance", "EGFR tyrosine kinase inhibitor resistance",
+     "PI3K-Akt signaling pathway",
+     "Adipocytokine signaling pathway",
+     "Glucagon signaling pathway",
+     "AMPK signaling pathway", 
+     "Insulin signaling pathway",
+     "FoxO signaling pathway",
+     "Longevity regulating pathway",
+     "Tryptophan metabolism",
+     "Oxytocin signaling pathway",
+     "Arginine and proline metabolism", 
+     "Pyruvate metabolism",
+     "Glycerophospholipid metabolism",
+     "Glutamatergic synapse", "Dopaminergic synapse", "GABAergic synapse"
+   )
+   
+   network_integr_altered_diet_all_pathw_F <- integrative_analyses_all_pathways_dietaltered_F %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#00CDCD",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#7A378B", # High value color
+       midpoint = 3  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+     scale_size_continuous(
+       range = c(2, 10),  # Range of circle sizes
+       breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),  # Breaks for FDR values
+       labels = c("0.1", "0.2", "0.3", "0.5", "0.8", "1"),  # Corresponding labels
+       name = "FDR"  # Add legend title for FDR
+     ) +
+     xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_altered_diet_all_pathw_F)   
+   ggsave("/network_integr_altered_diet_all_pathw_F.svg", 
+          plot = network_integr_altered_diet_all_pathw_F, 
+          device = "svg",
+          width = 6,
+          height = 4)
+   
+
+   #Figure S8B------------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-diet altered males all pathways new plot
+   
+   integrative_analyses_all_pathways_dietaltered_M = read.csv("data/metaboanalyst_all_pathways_altered_diet_males.csv")
+   
+   
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c(
+     "mTOR signaling pathway",
+     "Tryptophan metabolism",
+     "PI3K-Akt signaling pathway",
+     "FoxO signaling pathway",
+     "Glucagon signaling pathway",
+     "beta-Alanine metabolism",
+     "AMPK signaling pathway",
+     "Cholesterol metabolism",
+     "Insulin signaling pathway", "Insulin resistance",
+     "Oxytocin signaling pathway",
+     "Pyruvate metabolism", "Adipocytokine signaling pathway "
+   )
+   
+   network_integr_altered_diet_all_pathw_M <- integrative_analyses_all_pathways_dietaltered_M %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#00CDCD",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#7A378B", # High value color
+       midpoint = 2  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+     scale_size_continuous(
+       range = c(2, 10),  # Range of circle sizes
+       breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),  # Breaks for FDR values
+       labels = c("0.1", "0.2", "0.3", "0.5", "0.8", "1"),  # Corresponding labels
+       name = "FDR"  # Add legend title for FDR
+     ) +
+     xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_altered_diet_all_pathw_M)   
+   ggsave("/network_integr_altered_diet_all_pathw_M.svg", 
+          plot = network_integr_altered_diet_all_pathw_M, 
+          device = "svg",
+          width = 6,
+          height = 4)
+
+   #Figure S8C-----------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-restored FOSGOS females all pathways
+   
+   integrative_analyses_all_pathway_rest_FOSGOS_F = read.csv("data/metaboanalyst_all_pathways_restored_FOSGOS_males.csv")
+
+      
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c(
+     "Arginine and proline metabolism", "Glycerophospholipid metabolism",
+     "Pyruvate metabolism", 
+     "Tryptophan metabolism", 
+     "Pyrimidine metabolism",
+     "Fatty acid degradation",
+     "mTOR signaling", 
+     "Purine metabolism"
+   )
+
+      network_integr_all_pathway_rest_FOSGOS_F <- integrative_analyses_all_pathway_rest_FOSGOS_F %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#addead",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#8A7A8A", # High value color
+       midpoint = 1  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+        scale_size_continuous(
+          range = c(2, 10),
+          breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),
+          name = "FDR"
+        ) +
+        xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_all_pathway_rest_FOSGOS_F)   
+   ggsave("/network_integr_all_pathway_rest_FOSGOS_F.svg", 
+          plot = network_integr_all_pathway_rest_FOSGOS_F, 
+          device = "svg",
+          width = 6,
+          height = 4)
+
+   #Figure S8D -----------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-restored FOSGOS males all pathways
+   
+   integrative_analyses_all_pathway_rest_FOSGOS_M = read.csv("data/metaboanalyst_all_pathways_restored_FOSGOS_males.csv")
+   
+   
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c(
+     "Steroid hormone biosynthesis",
+     "Primary bile acid biosynthesis ",
+     "Tryptophan metabolism",
+     "Pentose phosphate pathway",
+     "Propanoate metabolism",
+     "Fatty acid degradation",
+     "Fatty acid elongation", "mTOR signaling pathway"
+   )
+   
+
+   network_integr_all_pathway_rest_FOSGOS_M <- integrative_analyses_all_pathway_rest_FOSGOS_M %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#addead",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#8A7A8A", # High value color
+       midpoint = 1.5  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+     scale_size_continuous(
+       range = c(2, 10),  # Range of circle sizes
+       breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),  # Breaks for FDR values
+       labels = c("0.1", "0.2", "0.3", "0.5", "0.8", "1"),  # Corresponding labels
+       name = "FDR"  # Add legend title for FDR
+     ) +
+     xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_all_pathway_rest_FOSGOS_M)   
+   ggsave("/network_integr_all_pathway_rest_FOSGOS_M.svg", 
+          plot = network_integr_all_pathway_rest_FOSGOS_M, 
+          device = "svg",
+          width = 6,
+          height = 4)
+
+   #Figure S8E-----------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-restored 1472  females all pathways 
+   
+   integrative_analyses_all_pathways_rest_1472_F = read.csv("data/metaboanalyst_all_pathways_restored_Blongum1472_females.csv")
+   
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c(
+     "Tryptophan metabolism", "DNA replication",
+     "ErbB signaling pathway", "Hedgehog signaling pathway",
+     "Nicotinate and nicotinamide metabolism", "Pantothenate and CoA biosynthesis",
+     "Notch signaling pathway", "Beta-alanine metabolism",
+     "mTOR signaling pathway", "AMPK signaling pathway",
+     "Taurine and hypotaurine metabolism", "p53 signaling pathway",
+     "Insulin signaling pathway"
+   )
+   
+      network_integr_all_pathway_rest_1472_F <- integrative_analyses_all_pathways_rest_1472_F %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#FFA54F",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#3b1d00", # High value color
+       midpoint = 1  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+     scale_size_continuous(
+       range = c(2, 10),  # Range of circle sizes
+       breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),  # Breaks for FDR values
+       labels = c("0.1", "0.2", "0.3", "0.5", "0.8", "1"),  # Corresponding labels
+       name = "FDR"  # Add legend title for FDR
+     ) +
+     xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_all_pathway_rest_1472_F)   
+   ggsave("/network_integr_all_pathway_rest_1472_F.svg", 
+          plot = network_integr_all_pathway_rest_1472_F, 
+          device = "svg",
+          width = 6,
+          height = 4)
+
+   #Figure S8F-----------------
+Metabolanalyst-integration HYP RNAseq-Blood metabolomes-restored 1472  males all pathways 
+   
+   integrative_analyses_all_pathway_rest_1472_M = read.csv("data/metaboanalyst_all_pathways_restored_Blongum1472_males.csv")
+   
+   
+   # Define pathways of interest as a separate vector
+   pathways_of_interest <- c("Growth hormone synthesis, secretion and action",
+     "Tryptophan metabolism", "Glucagon signaling pathway",
+     "Notch signaling pathway", "Insulin signaling pathway",
+     "MAPK signaling pathway", "AMPK signaling pathway", 
+     "Fatty acid biosynthesis", "Pyruvate metabolism",
+     "NOD-like receptor signaling pathway", "Dopaminergic synapse",
+     "Serotonergic synapse", "Valine, leucine and isoleucine degradation"
+   )
+   
+   
+   network_integr_all_pathway_rest_1472_M <- integrative_analyses_all_pathway_rest_1472_M %>%
+     # Create logical columns for pathway identification
+     mutate(
+       is_relevant = X %in% pathways_of_interest,
+       pathway_label = ifelse(is_relevant, X, "")
+     ) %>%
+     ggplot(aes(x = Impact, y = -log10(Raw.p))) + 
+     geom_point(
+       aes(size = FDR, fill = -log10(Raw.p)),  # Bubble size by FDR, fill by -log10(Raw.p)
+       shape = 21,  # Use shape 21 (circles with borders)
+       color = "gray",  # Set the border color to gray
+       alpha = 0.9     # Transparency for points
+     ) +
+     # Highlight relevant pathways with black border
+     geom_point(data = . %>% filter(is_relevant),
+                aes(size = FDR), 
+                color = "black", fill = NA, stroke = 1.2, shape = 21) +
+     # Add pathway labels for relevant pathways only
+     geom_text_repel(aes(label = pathway_label),
+                     size = 3,
+                     max.overlaps = Inf,
+                     box.padding = 0.3,
+                     point.padding = 0.2,
+                     segment.color = "grey50",
+                     segment.size = 0.3) +
+     scale_fill_gradient2(
+       low = "#FFA54F",  # Low value color
+       mid = "white",    # Midpoint color
+       high = "#3b1d00", # High value color
+       midpoint = 1  # Set midpoint explicitly to 2.5 for -log10(Raw.p)
+     ) +
+     scale_size_continuous(
+       range = c(2, 10),
+       breaks = c(0.1, 0.2, 0.3, 0.5, 0.8, 1),
+       name = "FDR"
+     ) +
+     xlab("Pathway Impact") +  # Label for x-axis
+     ylab("-log10(P-value)") +  # Label for y-axis
+     theme_minimal() +  # Use a clean, minimal theme
+     theme(
+       panel.grid.major = element_line(color = "lightgray", linetype = "dashed"),
+       panel.grid.minor = element_blank(),
+       axis.text.x = element_text(size = 12, angle = 45, hjust = 1),
+       axis.text.y = element_text(size = 12),
+       legend.title = element_text(size = 12),
+       legend.text = element_text(size = 10),
+       panel.border = element_rect(color = "black", fill = NA, linewidth = 0.5)  # Add a black thin border
+     ) + 
+     ggtitle("Integrative Pathway Analysis - Diet Altered")
+   
+   print(network_integr_all_pathway_rest_1472_M)   
+   ggsave("/network_integr_all_pathway_rest_1472_M.svg", 
+          plot = network_integr_all_pathway_rest_1472_M, 
+          device = "svg",
+          width = 6,
+          height = 4)
