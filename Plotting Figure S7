@@ -1,0 +1,1179 @@
+install.packages("janitor")
+library(janitor)
+install.packages(c("dplyr", "tidyr", "purrr", "broom", "lme4", "rstatix", "svglite"))
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(broom)
+library(lme4)
+library(broom.mixed)  
+library(rstatix)
+library(svglite)
+library(ggplot2) 
+library(tidyverse)
+install.packages("ggtext")
+library(ggtext)
+install.packages("openxlsx")
+library(openxlsx)
+
+
+#Load files-------------
+GBMs_abundance_unstr = read.delim("data/unstratified_GBMs_abundance_threshold0.01.tsv")  
+taxa_table = read.csv("data/taxa_table.csv")
+
+# parse fasta file to make a table
+fasta_seqs = read_lines("data/ASVs.fa")
+
+metadata_table = read.xlsx("data/metadata_table.xlsx")
+metadata_16S = read.csv("data/metadata_16S.csv")
+
+
+# Unstratified GBMs ---------------------------------------------------------
+
+colSums(is.na(GBMs_abundance_unstr[c("module_number", "module_name")]))
+colSums(is.na(GBMs_abundance_unstr))
+
+GBMs_abundance_unstr <- GBMs_abundance_unstr %>%
+  mutate(across(where(is.numeric), ~ replace_na(., 0)))
+
+asvs <- fasta_seqs[grepl(x = fasta_seqs, pattern = "^>")]
+sequences <- fasta_seqs[grepl(x = fasta_seqs, pattern = "^T|^C|^G|^A")]
+
+asv_map = data.frame(asvs = asvs,
+                     X = sequences) %>% 
+  mutate(asvs = gsub(x = asvs, pattern = "^>", replacement = ""))
+
+# join ASV and taxonomic info
+clean_asv_map <- inner_join(x = taxa_table,
+                            y = asv_map,
+                            by = "X")
+
+
+# keep GBMs of interesting taxa only
+tidy_GBMs_abundance_unstrs <- GBMs_abundance_unstr %>% 
+  rownames_to_column("feature") %>% 
+  mutate(asvs = word(string = feature, start = 1, end = 1, sep = "__"),
+         .before = everything()) %>% 
+  as_tibble() 
+
+
+# count transformations
+
+#Checking Samples in both metadata and abundance files
+
+colnames(tidy_GBMs_abundance_unstrs) <- gsub("^x", "", colnames(tidy_GBMs_abundance_unstrs))
+
+samples_in_tidy_GBMs_abundance_unstrs <- colnames(tidy_GBMs_abundance_unstrs)[-(1:2)]
+samples_in_metadata <- metadata_16S$Sample
+all(sort(samples_in_tidy_GBMs_abundance_unstrs) == sort(samples_in_metadata))
+
+setdiff(samples_in_metadata, samples_in_tidy_GBMs_abundance_unstrs)
+setdiff(samples_in_tidy_GBMs_abundance_unstrs, samples_in_metadata)
+
+table(samples_in_tidy_GBMs_abundance_unstrs %in% samples_in_metadata)
+table(samples_in_metadata %in% samples_in_tidy_GBMs_abundance_unstrs)
+
+#Remove dams from path_abun_unstrat_of_interest
+samples_to_remove <- c(
+  "104dam","105dam","106dam","107dam","110dam","111dam","113dam","114dam",
+  "115dam","116dam","117dam","118dam","119dam","120dam","121dam","122dam",
+  "123dam","124dam","125dam","126dam","127dam","128dam","129dam","130dam",
+  "131dam","133dam","135dam","136dam", "negblank"
+)
+
+tidy_GBMs_abundance_unstrs_pups <- dplyr::select(
+  tidy_GBMs_abundance_unstrs, 
+  -dplyr::all_of(samples_to_remove)
+)
+
+
+# Extract abundance data (excluding metadata columns)
+abundance_data <- tidy_GBMs_abundance_unstrs_pups %>%
+  select(where(is.double)) %>%
+  as.matrix()
+
+# Apply CLR transformation
+clr_data <- vegan::decostand(abundance_data, 
+                             method = "clr", 
+                             MARGIN = 2,  # by rows (each module across samples)
+                             pseudocount = 2/3)
+
+# Combine back with metadata
+clr_gbms_unstrs_pups <- tidy_GBMs_abundance_unstrs_pups %>%
+  select(!where(is.double)) %>%  # Keep only metadata columns
+  bind_cols(as_tibble(clr_data))
+
+write.csv(clr_gbms_unstrs_pups, "outputs/clr_gbms_unstrs_pups.csv")
+
+#Make it long
+
+clr_gbms_unstrs_pups_long <- clr_gbms_unstrs_pups %>%
+  tidyr::pivot_longer(
+    cols = -c(asvs,feature, module_number, module_name),
+    names_to = "Sample",
+    values_to = "clr_abundance"
+  ) %>%
+  dplyr::inner_join(metadata_16S, by = "Sample")
+write.csv(clr_gbms_unstrs_pups_long, "outputs/clr_gbms_unstrs_pups_long.csv")
+
+
+
+#Stats restoration contrasts  pairwise----------
+
+diet_clr_gbms_unstrs_pups_long <- clr_gbms_unstrs_pups_long %>% 
+  dplyr::select(asvs, feature, module_number, module_name, Sample, clr_abundance, Diet, Treatment, sex, timepoint, Cage.Litter, Cohort, legend) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS"))) %>%
+  filter(treatment == "Vehicle") %>% 
+  group_by(module_name, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(diet_pwtt = purrr::map(.x = data, 
+                                .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                formula = clr_abundance ~ diet,
+                                                                pool.sd = FALSE))) %>% 
+  unnest(c(diet_pwtt)) %>%
+  dplyr::select(-data) %>%  # Remove the nested data column if it exists
+  mutate(comparison_type = "diet")
+
+treatment_clr_gbms_unstrs_pups_long <- clr_gbms_unstrs_pups_long %>% 
+  dplyr::select(asvs, feature, module_number, module_name, Sample, clr_abundance, Diet, Treatment, sex, timepoint, Cage.Litter, Cohort, legend) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS"))) %>%
+  filter(diet == "HFHS") %>% 
+  group_by(module_name, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(treatment_pwtt = purrr::map(.x = data, 
+                                     .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                     formula = clr_abundance ~ treatment,
+                                                                     pool.sd = FALSE))) %>% 
+  unnest(treatment_pwtt) %>%
+  dplyr::select(-data) %>%  # Remove the nested data column if it exists
+  mutate(comparison_type = "treatment")
+
+combined_diet_treatment_clr_gbms_unstrs_pups_long <- bind_rows(diet_clr_gbms_unstrs_pups_long, treatment_clr_gbms_unstrs_pups_long)
+
+write.csv(combined_diet_treatment_clr_gbms_unstrs_pups_long, 
+          "outputs/combined_diet_treatment_clr_gbms_unstrs_pups_long.csv", 
+          row.names = FALSE)  
+
+combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration <- combined_diet_treatment_clr_gbms_unstrs_pups_long %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(module_name, sex, timepoint) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration, "outputs/combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_padj0.05.csv", row.names = FALSE)
+
+
+
+#Plotting Supplementary Fig. S7A-------------
+
+gbms_scfa <- c("Acetate synthesis I", "Acetate synthesis II", "Acetate synthesis III", "Acetate synthesis IV", "Acetate degradation",
+               "Propionate synthesis I", "Propionate synthesis II", "Propionate synthesis III", "Propionate degradation I",
+               "Butyrate synthesis I", "Butyrate synthesis II",
+               "Isovaleric acid synthesis I (KADH pathway)","Isovaleric acid synthesis II (KADC pathway)")
+
+clr_gbms_unstrs_pups_long_scfa <- clr_gbms_unstrs_pups_long %>% 
+  filter(module_name %in% gbms_scfa)
+
+combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_scfa <- combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration %>% 
+  filter(module_name %in% gbms_scfa)
+write.csv(combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_scfa, "outputs/combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_padj0.05_SCFAs.csv", row.names = FALSE)
+
+
+
+#Plotting SCFA metabolic modules in heatmap style-------------------
+
+
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+library(grid)
+library(gridExtra)
+
+# Function to prepare heatmap data from the long format data for SCFA modules
+prepare_scfa_heatmap_data_from_long <- function(long_data, stats_df) {
+  
+  # Create mean values by treatment group, sex, timepoint, and module
+  # Using the legend column which already contains treatment group information
+  mean_data <- long_data %>%
+    dplyr::group_by(module_name, sex, timepoint, legend, asvs) %>%
+    dplyr::summarise(mean_value = mean(clr_abundance, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::rename(treatment_group = legend) %>%
+    dplyr::mutate(asvs = as.character(asvs))  # Convert asvs to character
+  
+  # Get significance data from stats dataframe
+  sig_data <- stats_df %>%
+    dplyr::select(module_name, sex, timepoint,
+                  p.adj_diet, p.adj_treatment_FOSGOS, p.adj_treatment_1472) %>%
+    dplyr::mutate(
+      # Diet effect symbols (black)
+      stars_diet = case_when(
+        p.adj_diet <= 0.001 ~ "###",
+        p.adj_diet <= 0.01 ~ "##", 
+        p.adj_diet <= 0.05 ~ "#",
+        p.adj_diet <= 0.1 ~ "††",
+        p.adj_diet <= 0.2 ~ "†",
+        TRUE ~ ""
+      ),
+      # FOS+GOS treatment effect symbols (green)
+      stars_fosgos = case_when(
+        p.adj_treatment_FOSGOS <= 0.001 ~ "****",
+        p.adj_treatment_FOSGOS <= 0.01 ~ "***", 
+        p.adj_treatment_FOSGOS <= 0.05 ~ "**",
+        p.adj_treatment_FOSGOS <= 0.1 ~ "††",
+        p.adj_treatment_FOSGOS <= 0.2 ~ "†",
+        TRUE ~ ""
+      ),
+      # B.longum treatment effect symbols (orange)
+      stars_1472 = case_when(
+        p.adj_treatment_1472 <= 0.001 ~ "****",
+        p.adj_treatment_1472 <= 0.01 ~ "***", 
+        p.adj_treatment_1472 <= 0.05 ~ "**",
+        p.adj_treatment_1472 <= 0.1 ~ "††",
+        p.adj_treatment_1472 <= 0.2 ~ "†",
+        TRUE ~ ""
+      )
+    )
+  
+  # Combine mean data with significance data
+  heatmap_data <- mean_data %>%
+    dplyr::left_join(sig_data, by = c("module_name", "sex", "timepoint")) %>%
+    dplyr::mutate(
+      stars = case_when(
+        grepl("HFHS.*Vehicle", treatment_group) ~ stars_diet,
+        grepl("FOS.*GOS", treatment_group) ~ stars_fosgos,
+        grepl("1472|longum", treatment_group) ~ stars_1472,
+        TRUE ~ ""
+      ),
+      # Add color coding for stars
+      star_color = case_when(
+        grepl("HFHS.*Vehicle", treatment_group) ~ "black",
+        grepl("FOS.*GOS", treatment_group) ~ "#006400",  # Dark green (PowerPoint standard)
+        grepl("1472|longum", treatment_group) ~ "orange",
+        TRUE ~ "black"
+      )
+    )
+  
+  return(heatmap_data)
+}
+
+# Apply the function to your data
+plot_data <- prepare_scfa_heatmap_data_from_long(clr_gbms_unstrs_pups_long_scfa, 
+                                                 combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_scfa)
+
+# Debug: Check what treatment groups are actually in the data
+cat("Unique treatment groups in legend column:\n")
+print(unique(clr_gbms_unstrs_pups_long_scfa$legend))
+cat("\nUnique treatment groups in plot_data:\n")
+print(unique(plot_data$treatment_group))
+
+# Set factor levels for proper ordering - adapt to actual data
+unique_treatments <- unique(plot_data$treatment_group)
+cat("Available treatment groups:", paste(unique_treatments, collapse = ", "), "\n")
+
+# Define desired order, but only include groups that actually exist
+desired_order <- c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B.longum APC1472")
+# Keep only the ones that exist in the data
+actual_order <- desired_order[desired_order %in% unique_treatments]
+# Add any remaining groups not in our predefined order
+remaining_groups <- unique_treatments[!unique_treatments %in% desired_order & !is.na(unique_treatments)]
+final_order <- c(actual_order, remaining_groups)
+
+plot_data$treatment_group <- factor(plot_data$treatment_group, levels = final_order)
+
+plot_data$sex <- factor(plot_data$sex, levels = c("F", "M"))
+plot_data$timepoint <- factor(plot_data$timepoint, levels = c("w5", "w10"))
+
+# Filter for modules that have significant results in at least one comparison
+significant_modules <- plot_data %>%
+  filter(stars != "" & !is.na(stars)) %>%
+  pull(module_name) %>%
+  unique()
+
+# Filter data to only include significant modules
+plot_data_filtered <- plot_data %>%
+  filter(module_name %in% significant_modules)
+
+# If no significant modules, include all modules
+if(nrow(plot_data_filtered) == 0) {
+  cat("No significant modules found, including all modules...\n")
+  plot_data_filtered <- plot_data
+}
+
+# Create the enhanced heatmap
+scfa_heatmap_treatment_groups <- ggplot(plot_data_filtered, 
+                                        aes(x = treatment_group, y = module_name)) + 
+  
+  # Main heatmap tiles
+  geom_tile(aes(fill = mean_value), colour = "white", size = 1) + 
+  
+  # Color scheme for CLR transformed values
+  geom_tile(aes(fill = mean_value), colour = "white", size = 0.3) + 
+  
+  # Color scheme
+  scale_fill_gradientn(
+    colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
+                "white", 
+                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"),
+    values = scales::rescale(c(min_val, min_val + (avg_val - min_val)*0.5, avg_val, 
+                               avg_val + (max_val - avg_val)*0.5, max_val)),
+    name = "CLR Transformed\nAbundance",
+    na.value = "grey90"
+  ) +
+  
+  # Add significance stars with color coding
+  geom_text(aes(label = stars, color = star_color), size = 4, fontface = "bold") + 
+  
+  # Manual color scale for significance stars
+  scale_color_identity() + 
+  
+  # Faceting by sex and timepoint
+  facet_grid(timepoint ~ sex, 
+             labeller = labeller(.multi_line = FALSE)) +
+  
+  # Axes
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  
+  # Labels and theming
+  labs(
+    title = "SCFA Metabolic Module Abundance by Treatment Group",
+    subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
+                      "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
+                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n",
+                      "Arrows indicate direction: ↑ = increase, ↓ = decrease"),
+    x = "Treatment Group",
+    y = "SCFA Metabolic Modules"
+  ) + 
+  
+  theme_minimal(base_size = 11) +
+  theme(
+    # Plot background
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.grid = element_blank(),
+    
+    # Axes
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, 
+                               size = 9, colour = "black"),
+    axis.text.y = element_text(size = 9, colour = "black"),
+    axis.title = element_text(size = 11, colour = "black", face = "bold"),
+    axis.ticks = element_blank(),
+    
+    # Facet strips (the grey boxes)
+    strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
+    strip.text = element_text(size = 10, colour = "black", face = "bold",
+                              margin = margin(4, 4, 4, 4)),
+    
+    # Title
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5, 
+                              margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 10, hjust = 0.5, 
+                                 colour = "grey40", margin = margin(b = 15)),
+    
+    # Legend
+    legend.position = "right",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    
+    # Panel spacing and borders
+    panel.spacing = unit(0.2, "lines"),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.8),
+    
+    # Margins
+    plot.margin = margin(15, 15, 15, 15)
+  )
+
+# Print the plot
+print(scfa_heatmap_treatment_groups)
+
+# Alternative version with custom facet labels
+plot_data_filtered$facet_label <- paste0(plot_data_filtered$sex, " - ", plot_data_filtered$timepoint)
+
+scfa_heatmap_custom_labels <- ggplot(plot_data_filtered, 
+                                     aes(x = treatment_group, y = module_name)) + 
+  
+  # Main heatmap tiles
+  geom_tile(aes(fill = mean_value), colour = "white", size = 1) + 
+  
+  # Color scheme
+  scale_fill_gradientn(
+    colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
+                "white", 
+                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"), 
+    name = "CLR Transformed\nAbundance",
+    na.value = "grey90"
+  ) +
+  
+  # Add significance stars with color coding
+  geom_text(aes(label = stars, color = star_color), size = 4, fontface = "bold") + 
+  
+  # Manual color scale for significance stars
+  scale_color_identity() + 
+  
+  # Custom faceting
+  facet_grid(timepoint ~ sex, 
+             labeller = labeller(
+               sex = c("F" = "Female", "M" = "Male"),
+               timepoint = c("w5" = "Week 5", "w10" = "Week 10")
+             )) +
+  
+  # Axes
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  
+  # Labels and theming
+  labs(
+    title = "SCFA Metabolic Module Abundance by Treatment Group",
+    subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
+                      "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
+                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001"),
+    x = "Treatment Group",
+    y = "SCFA Metabolic Modules"
+  ) + 
+  
+  theme_minimal(base_size = 11) +
+  theme(
+    # Plot background
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.grid = element_blank(),
+    
+    # Axes
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, 
+                               size = 9, colour = "black"),
+    axis.text.y = element_text(size = 9, colour = "black"),
+    axis.title = element_text(size = 11, colour = "black", face = "bold"),
+    axis.ticks = element_blank(),
+    
+    # Facet strips (the grey boxes)
+    strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
+    strip.text = element_text(size = 10, colour = "black", face = "bold",
+                              margin = margin(4, 4, 4, 4)),
+    
+    # Title
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5, 
+                              margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 9, hjust = 0.5, 
+                                 colour = "grey40", margin = margin(b = 15)),
+    
+    # Legend
+    legend.position = "right",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    
+    # Panel spacing and borders
+    panel.spacing = unit(0.2, "lines"),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.8),
+    
+    # Margins
+    plot.margin = margin(15, 15, 15, 15)
+  )
+
+# Print the custom labels version
+print(scfa_heatmap_custom_labels)
+
+# Save both versions
+ggsave("/heatmap_treatment_groups_clr_scfa_modules_pups.svg", 
+       plot = scfa_heatmap_treatment_groups, 
+       width = 16, 
+       height = 18,
+       device = "svg",
+       dpi = 300)
+
+ggsave("/heatmap_treatment_groups_custom_labels_clr_scfa_modules_pups.svg", 
+       plot = scfa_heatmap_custom_labels, 
+       width = 16, 
+       height = 18,
+       device = "svg",
+       dpi = 300)
+
+
+# Metacyc info ---------------------------------------------------------------
+
+#fatty acid:
+fatty_acid_metacyc <- c("FAO-PWY", "FASYN-ELONG-PWY", "FASYN-INITIAL-PWY", 
+                        "PWY0-541", "PWY-2501", "PWY-4381", "PWY-5080", 
+                        "PWY-5136", "PWY-5137", "PWY-5138", "PWY-5143", 
+                        "PWY-5156", "PWY-561", "PWY-5965", "PWY-5966", 
+                        "PWY-5970", "PWY-6284", "PWY-6285", "PWY66-387", 
+                        "PWY66-388", "PWY66-391", "PWY-6710", "PWY-6837", 
+                        "PWY-6873", "PWY-7036", "PWY-7094", "PWY-7288")
+
+#FAO-PWY	fatty acid &beta;-oxidation I
+#FASYN-ELONG-PWY	fatty acid elongation -- saturated
+#FASYN-INITIAL-PWY	superpathway of fatty acid biosynthesis initiation (E. coli)
+#PWY0-541	cyclopropane fatty acid (CFA) biosynthesis
+#PWY-2501	fatty acid &alpha;-oxidation I
+#PWY-4381	fatty acid biosynthesis initiation I
+#PWY-5080	very long chain fatty acid biosynthesis I
+#PWY-5136	fatty acid &beta;-oxidation II (peroxisome)
+#PWY-5137	fatty acid &beta;-oxidation III (unsaturated, odd number)
+#PWY-5138	unsaturated, even numbered fatty acid &beta;-oxidation
+#PWY-5143	long-chain fatty acid activation
+#PWY-5156	superpathway of fatty acid biosynthesis II (plant)
+#PWY-561	superpathway of glyoxylate cycle and fatty acid degradation
+#PWY-5965	fatty acid biosynthesis initiation III
+#PWY-5966	fatty acid biosynthesis initiation II
+#PWY-5970	fatty acids biosynthesis (yeast)
+#PWY-6284	superpathway of unsaturated fatty acids biosynthesis (E. coli)
+#PWY-6285	superpathway of fatty acids biosynthesis (E. coli)
+#PWY66-387	fatty acid &alpha;-oxidation II
+#PWY66-388	fatty acid &alpha;-oxidation III
+#PWY66-391	fatty acid &beta;-oxidation VI (peroxisome)
+#PWY-6710	poly-hydroxy fatty acids biosynthesis
+#PWY-6837	fatty acid beta-oxidation V (unsaturated, odd number, di-isomerase-dependent)
+#PWY-6873	long chain fatty acid ester synthesis for microdiesel production
+#PWY-7036	very long chain fatty acid biosynthesis II
+#PWY-7094	fatty acid salvage
+#PWY-7288	fatty acid &beta;-oxidation (peroxisome, yeast)
+
+
+#ARGININE:
+arginine_metacyc <- c("ARGASEDEG-PWY", "ARGDEG-III-PWY", "ARGDEG-IV-PWY", 
+                      "ARGDEG-PWY", "ARGDEGRAD-PWY", "ARGDEG-V-PWY", 
+                      "ARG-GLU-PWY", "ARGORNPROST-PWY", "ARG+POLYAMINE-SYN", 
+                      "ARG-PRO-PWY", "ARGSYNBSUB-PWY", "ARGSYN-PWY", 
+                      "AST-PWY", "ORNARGDEG-PWY", "PWY0-1299", "PWY0-823", 
+                      "PWY-4981", "PWY-5024", "PWY-5154", "PWY-5742", 
+                      "PWY-6422", "PWY-7523", "PWY-7400")
+
+#ARGASEDEG-PWY	L-arginine degradation I (arginase pathway)
+#ARGDEG-III-PWY	L-arginine degradation IV (arginine decarboxylase/agmatine deiminase pathway)
+#ARGDEG-IV-PWY	L-arginine degradation VIII (arginine oxidase pathway)
+#ARGDEG-PWY	superpathway of L-arginine, putrescine, and 4-aminobutanoate degradation
+#ARGDEGRAD-PWY	L-arginine degradation V (arginine deiminase pathway)
+#ARGDEG-V-PWY	L-arginine degradation X (arginine monooxygenase pathway)
+#ARG-GLU-PWY	L-arginine degradation VII (arginase 3 pathway)
+#ARGORNPROST-PWY	arginine, ornithine and proline interconversion
+#ARG+POLYAMINE-SYN	superpathway of arginine and polyamine biosynthesis
+#ARG-PRO-PWY	L-arginine degradation VI (arginase 2 pathway)
+#ARGSYNBSUB-PWY	L-arginine biosynthesis II (acetyl cycle)
+#ARGSYN-PWY	L-arginine biosynthesis I (via L-ornithine)
+#AST-PWY	L-arginine degradation II (AST pathway)
+#ORNARGDEG-PWY	superpathway of L-arginine and L-ornithine degradation
+#PWY0-1299	arginine dependent acid resistance
+#PWY0-823	L-arginine degradation III (arginine decarboxylase/agmatinase pathway)
+#PWY-4981	L-proline biosynthesis II (from arginine)
+#PWY-5024	L-arginine degradation XI
+#PWY-5154	L-arginine biosynthesis III (via N-acetyl-L-citrulline)
+#PWY-5742	L-arginine degradation IX (arginine:pyruvate transaminase pathway)
+#PWY-6422	D-arginine degradation
+#PWY-7523	L-arginine degradation XII
+#PWY-7400	L-arginine biosynthesis IV (archaebacteria)
+
+#Decanoylcarnitine: 
+
+carnitine_metacyc <- c("CARNMET-PWY", "PWY-3602", "PWY-3641", 
+                       "PWY-6100", "PWY-6111", 
+                       "PWY-7471", "PWY-7472")
+
+#CARNMET-PWY	L-carnitine degradation I
+#PWY-3602	L-carnitine degradation II
+#PWY-3641	L-carnitine degradation III
+#PWY-6100	L-carnitine biosynthesis
+#PWY-6111	mitochondrial L-carnitine shuttle
+#PWY-7471	D-carnitine degradation I
+#PWY-7472	D-carnitine degradation II
+
+
+#Deoxyuridine:
+
+uridine_metacyc <- c("PWY0-1554", "PWY-6019")
+
+#PWY0-1554	5-(carboxymethoxy)uridine biosynthesis
+#PWY-6019	pseudouridine degradation
+
+#Spermidine:
+
+spermidine_metacyc <- c("BSUBPOLYAMSYN-PWY", "PWY-4121", "PWY-5907",
+                        "PWY-6117", "PWY-6440", "PWY-6441", "PWY-6442",
+                        "PWY-6559", "PWY-6562", "PWY-6834")
+
+#BSUBPOLYAMSYN-PWY	spermidine biosynthesis I
+#PWY-4121	glutathionylspermidine biosynthesis
+#PWY-5907	homospermidine biosynthesis
+#PWY-6117	spermine and spermidine degradation I
+#PWY-6440	spermine and spermidine degradation II
+#PWY-6441	spermine and spermidine degradation III
+#PWY-6442	spermidine hydroxycinnamic acid conjugates biosynthesis
+#PWY-6559	spermidine biosynthesis II
+#PWY-6562	norspermidine biosynthesis
+#PWY-6834	spermidine biosynthesis III
+
+#Bile acids:
+
+bile_acids_metacyc <- c("PWY-6061", "PWY-6518", "PWY-7588")
+
+#PWY-6061	bile acid biosynthesis, neutral pathway
+#PWY-6518	glycocholate metabolism (bacteria)
+#PWY-7588	ursodeoxycholate biosynthesis (bacteria)
+
+#corticosterone :
+corticosterone_metacyc <- c("PWY66-381", "PWY66-382", "PWY-6763")
+
+#PWY66-381	glucocorticoid biosynthesis
+#PWY66-382	mineralocorticoid biosynthesis
+#PWY-6763	salicortin biosynthesis
+
+#tryptophan:
+tryptophan_metacyc <- c("NADSYN-PWY", "PWY-3162", "PWY-3181", "PWY-5081", 
+                        "PWY-5651", "PWY-5655", "PWY-601", "PWY-6307", 
+                        "PWY-6309", "PWY-6505", "PWY-6629", "TRPCAT-PWY", 
+                        "TRPIAACAT-PWY", "TRPKYNCAT-PWY", "TRPSYN-PWY", 
+                        "TRYPDEG-PWY", "TRYPTOPHAN-DEGRADATION-1")
+
+#NADSYN-PWY	NAD biosynthesis II (from tryptophan)
+#PWY-3162	L-tryptophan degradation V (side chain pathway)
+#PWY-3181	L-tryptophan degradation VI (via tryptamine)
+#PWY-5081	L-tryptophan degradation VIII (to tryptophol)
+#PWY-5651	L-tryptophan degradation to 2-amino-3-carboxymuconate semialdehyde
+#PWY-5655	L-tryptophan degradation IX
+#PWY-601	glucosinolate biosynthesis from tryptophan
+#PWY-6307	L-tryptophan degradation X (mammalian, via tryptamine)
+#PWY-6309	L-tryptophan degradation XI (mammalian, via kynurenine)
+#PWY-6505	L-tryptophan degradation XII (Geobacillus)
+#PWY-6629	superpathway of L-tryptophan biosynthesis
+#TRPCAT-PWY	L-tryptophan degradation I (via anthranilate)
+#TRPCAT-PWY	L-tryptophan degradation I (via anthranilate)
+#TRPIAACAT-PWY	L-tryptophan degradation VII (via indole-3-pyruvate)
+#TRPKYNCAT-PWY	L-tryptophan degradation IV (via indole-3-lactate)
+#TRPSYN-PWY	L-tryptophan biosynthesis
+#TRYPDEG-PWY	L-tryptophan degradation II (via pyruvate)
+#TRYPTOPHAN-DEGRADATION-1	L-tryptophan degradation III (eukaryotic)
+
+
+#creatinine :
+creatinine_metacyc <- c("CRNFORCAT-PWY", "PWY-4722", "PWY-4741")
+
+#CRNFORCAT-PWY	creatinine degradation I
+#PWY-4722	creatinine degradation II
+#PWY-4741	creatinine degradation III
+
+#glutathione:
+glutathione_metacyc <- c("GLUTATHIONESYN-PWY", "GLUT-REDOX-PWY", "PWY-2261", 
+                         "PWY-4061", "PWY-4081", "PWY-4181", "PWY-6840", 
+                         "PWY-6842", "PWY-7559")
+
+#GLUTATHIONESYN-PWY	glutathione biosynthesis
+#GLUT-REDOX-PWY	glutathione redox reactions II
+#PWY-2261	ascorbate glutathione cycle
+#PWY-4061	glutathione-mediated detoxification I
+#PWY-4081	glutathione redox reactions I
+#PWY-4181	glutathione amide metabolism
+#PWY-6840	homoglutathione biosynthesis
+#PWY-6842	glutathione-mediated detoxification II
+#PWY-7559	glutathione degradation (DUG pathway - yeast)
+
+#MERGING ALL THE METACYC LISTS
+library(dplyr)
+
+# Collect all *_metacyc objects into a list
+metacyc_lists <- list(
+  fatty_acid_metacyc   = fatty_acid_metacyc,
+  arginine_metacyc     = arginine_metacyc,
+  carnitine_metacyc    = carnitine_metacyc,
+  uridine_metacyc      = uridine_metacyc,
+  spermidine_metacyc   = spermidine_metacyc,
+  bile_acids_metacyc   = bile_acids_metacyc,
+  corticosterone_metacyc = corticosterone_metacyc,
+  tryptophan_metacyc   = tryptophan_metacyc,
+  creatinine_metacyc   = creatinine_metacyc,
+  glutathione_metacyc  = glutathione_metacyc
+)
+
+# Convert to one dataframe with a column 'metacyc_of_interest'
+metacyc_of_interest <- bind_rows(
+  lapply(names(metacyc_lists), function(name) {
+    data.frame(
+      pathway = metacyc_lists[[name]],
+      metacyc_of_interest = name,
+      stringsAsFactors = FALSE
+    )
+  })
+)
+head(metacyc_of_interest)
+
+write.csv(metacyc_of_interest, "data/metacyc_of_interest.csv")
+metacyc_of_interest <- dplyr::select(metacyc_of_interest, -X)
+
+#Select metabolic patwhays after running clr------------
+
+#Load files
+metacyc_pathways_info = read.delim("data/metacyc_pathways_info_title.txt")
+metacyc_pathways_info <- dplyr::select(metacyc_pathways_info, -information, -X.1)
+metacyc_pathways_info = read.csv("data/metacyc_pathways_info.csv")
+metacyc_pathways_info <- dplyr::select(metacyc_pathways_info, -X.1)
+
+path_abun_unstrat = read.delim("data/ppath_abun_unstrat.tsv")
+path_abun_unstrat = read.csv("data/path_abun_unstrat.csv")
+
+colnames(metacyc_pathways_info)
+# Vector of samples to remove
+samples_to_remove <- c(
+  "x104dam","x105dam","x106dam","x107dam","x110dam","x111dam","x113dam","x114dam",
+  "x115dam","x116dam","x117dam","x118dam","x119dam","x120dam","x121dam","x122dam",
+  "x123dam","x124dam","x125dam","x126dam","x127dam","x128dam","x129dam","x130dam",
+  "x131dam","x133dam","x135dam","x136dam"
+)
+
+path_abun_unstrat_pups <- dplyr::select(
+  path_abun_unstrat, 
+  -dplyr::all_of(samples_to_remove)
+)
+write.csv(path_abun_unstrat_pups, "outputs/path_abun_unstrat_pups.csv")
+
+#CLR-transformed data path_abun_unstrat_of_interest_pups after keeping only pathways of interest
+
+clr_path_abun_unstrat_pups <- path_abun_unstrat_pups %>%
+  mutate(across(-pathway, ~vegan::decostand(as.matrix(.), 
+                                            method = "clr", 
+                                            MARGIN = 2, 
+                                            pseudocount = 2/3)))
+write.csv(clr_path_abun_unstrat_pups, "output/clr_path_abun_unstrat_pups.csv")
+
+clr_path_abun_unstrat_pups_of_interest = clr_path_abun_unstrat_pups %>%
+  filter(pathway %in% metacyc_of_interest$pathway)
+write.csv(clr_path_abun_unstrat_pups_of_interest, "outputs/clr_path_abun_unstrat_pups_of_interest.csv")
+
+clr_path_abun_unstrat_pups_of_interest_long = clr_path_abun_unstrat_pups_of_interest %>%
+  pivot_longer(!pathway, names_to="Sample", values_to="Value") %>%
+  inner_join(metadata_16S, by ="Sample") 
+write.csv(clr_path_abun_unstrat_pups_of_interest_long, "outputs/clr_path_abun_unstrat_pups_of_interest_long.csv")
+
+
+
+#Restoration contrasts pairwise Stats on pathways of interest-----
+
+diet_clr_path_abun_unstrat_pups_of_interest_long <- clr_path_abun_unstrat_pups_of_interest_long %>% 
+  dplyr::select(pathway, Sample, Value, sex, Diet, timepoint, Treatment, Cage.Litter, Cohort, legend) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS"))) %>%
+  filter(treatment == "Vehicle") %>% 
+  group_by(pathway, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(diet_pwtt = purrr::map(.x = data, 
+                                .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                formula = value ~ diet,
+                                                                pool.sd = FALSE))) %>% 
+  unnest(c(diet_pwtt)) %>%
+  dplyr::select(-data) %>%  # Remove the nested data column if it exists
+  mutate(comparison_type = "diet")
+
+treatment_clr_path_abun_unstrat_pups_of_interest_long <- clr_path_abun_unstrat_pups_of_interest_long %>% 
+  dplyr::select(pathway, Sample, sex, Value, Diet, timepoint, Treatment, Cage.Litter, Cohort, legend) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS"))) %>%
+  filter(diet == "HFHS") %>% 
+  group_by(pathway, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(treatment_pwtt = purrr::map(.x = data, 
+                                     .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                     formula = value ~ treatment,
+                                                                     pool.sd = FALSE))) %>% 
+  unnest(treatment_pwtt) %>%
+  dplyr::select(-data) %>%  # Remove the nested data column if it exists
+  mutate(comparison_type = "treatment")
+
+combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long <- bind_rows(diet_clr_path_abun_unstrat_pups_of_interest_long, treatment_clr_path_abun_unstrat_pups_of_interest_long)
+
+write.csv(combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long, 
+          "outputs/combined_diet_treatment_FBratio_relabund_pups.csv", 
+          row.names = FALSE)  
+
+combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration <- combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(pathway, sex, timepoint) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration, "outputs/clr_path_abun_unstrat_pups_of_interest_long_restoration.csv", row.names = FALSE)
+
+
+
+combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration = combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration %>%
+  left_join(metacyc_of_interest, by = c("pathway" = "pathway"))
+
+combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration = combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration %>%
+  left_join(metacyc_pathways_info, by = c("pathway" = "pathway"))
+
+clr_path_abun_unstrat_pups_of_interest_long = clr_path_abun_unstrat_pups_of_interest_long %>%
+  left_join(metacyc_of_interest, by = c("pathway" = "pathway"))
+
+clr_path_abun_unstrat_pups_of_interest_long = clr_path_abun_unstrat_pups_of_interest_long %>%
+  left_join(metacyc_pathways_info, by = c("pathway" = "pathway"))
+
+#Plotting pathways in heatmap style-------------------
+
+
+library(dplyr)
+library(ggplot2)
+library(reshape2)
+library(tidyr)
+library(grid)
+library(gridExtra)
+max_val <- max(clr_path_abun_unstrat_pups_of_interest_long$Value, na.rm = TRUE)
+min_val <- min(clr_path_abun_unstrat_pups_of_interest_long$Value, na.rm = TRUE)
+
+max_val
+min_val
+avg_val <- mean(clr_path_abun_unstrat_pups_of_interest_long$Value, na.rm = TRUE)
+avg_val
+
+# Function to prepare heatmap data from the long format data for pathways
+prepare_pathway_heatmap_data_from_long <- function(long_data, stats_df) {
+  
+  # Create mean values by treatment group, sex, timepoint, and pathway
+  # Using the legend column which already contains treatment group information
+  mean_data <- long_data %>%
+    dplyr::group_by(pathway, X.y, sex, timepoint, legend) %>%
+    dplyr::summarise(mean_value = mean(Value, na.rm = TRUE), .groups = "drop") %>%
+    dplyr::rename(treatment_group = legend) %>%
+    dplyr::mutate(
+      # Create a combined pathway label with description
+      pathway_label = paste0(pathway, " - ", X.y)
+    )
+  
+  # Get significance data from stats dataframe
+  sig_data <- stats_df %>%
+    dplyr::select(pathway, sex, timepoint,
+                  p.adj_diet, p.adj_treatment_FOSGOS, p.adj_treatment_1472) %>%
+    dplyr::mutate(
+      # Diet effect symbols (black)
+      stars_diet = case_when(
+        p.adj_diet <= 0.001 ~ "###",
+        p.adj_diet <= 0.01 ~ "##", 
+        p.adj_diet <= 0.05 ~ "#",
+        p.adj_diet <= 0.1 ~ "††",
+        p.adj_diet <= 0.2 ~ "†",
+        TRUE ~ ""
+      ),
+      # FOS+GOS treatment effect symbols (green)
+      stars_fosgos = case_when(
+        p.adj_treatment_FOSGOS <= 0.001 ~ "****",
+        p.adj_treatment_FOSGOS <= 0.01 ~ "***", 
+        p.adj_treatment_FOSGOS <= 0.05 ~ "**",
+        p.adj_treatment_FOSGOS <= 0.1 ~ "††",
+        p.adj_treatment_FOSGOS <= 0.2 ~ "†",
+        TRUE ~ ""
+      ),
+      # B.longum treatment effect symbols (orange)
+      stars_1472 = case_when(
+        p.adj_treatment_1472 <= 0.001 ~ "****",
+        p.adj_treatment_1472 <= 0.01 ~ "***", 
+        p.adj_treatment_1472 <= 0.05 ~ "**",
+        p.adj_treatment_1472 <= 0.1 ~ "††",
+        p.adj_treatment_1472 <= 0.2 ~ "†",
+        TRUE ~ ""
+      )
+    )
+  
+  # Combine mean data with significance data
+  heatmap_data <- mean_data %>%
+    dplyr::left_join(sig_data, by = c("pathway", "sex", "timepoint")) %>%
+    dplyr::mutate(
+      stars = case_when(
+        grepl("HFHS.*Vehicle", treatment_group) ~ stars_diet,
+        grepl("FOS.*GOS", treatment_group) ~ stars_fosgos,
+        grepl("1472|longum", treatment_group) ~ stars_1472,
+        TRUE ~ ""
+      ),
+      # Add color coding for stars
+      star_color = case_when(
+        grepl("HFHS.*Vehicle", treatment_group) ~ "black",
+        grepl("FOS.*GOS", treatment_group) ~ "#006400",  # Dark green (PowerPoint standard)
+        grepl("1472|longum", treatment_group) ~ "orange",
+        TRUE ~ "black"
+      )
+    )
+  
+  return(heatmap_data)
+}
+
+# Apply the function to your data
+plot_data <- prepare_pathway_heatmap_data_from_long(clr_path_abun_unstrat_pups_of_interest_long, 
+                                                    combined_diet_treatment_clr_path_abun_unstrat_pups_of_interest_long_restoration)
+
+# Debug: Check what treatment groups are actually in the data
+cat("Unique treatment groups in legend column:\n")
+print(unique(clr_path_abun_unstrat_pups_of_interest_long$legend))
+cat("\nUnique treatment groups in plot_data:\n")
+print(unique(plot_data$treatment_group))
+
+# Set factor levels for proper ordering - adapt to actual data
+unique_treatments <- unique(plot_data$treatment_group)
+cat("Available treatment groups:", paste(unique_treatments, collapse = ", "), "\n")
+
+# Define desired order, but only include groups that actually exist
+desired_order <- c("Control Vehicle", "HFHS Vehicle", "HFHS FOS+GOS", "HFHS B.longum APC1472")
+# Keep only the ones that exist in the data
+actual_order <- desired_order[desired_order %in% unique_treatments]
+# Add any remaining groups not in our predefined order
+remaining_groups <- unique_treatments[!unique_treatments %in% desired_order & !is.na(unique_treatments)]
+final_order <- c(actual_order, remaining_groups)
+
+plot_data$treatment_group <- factor(plot_data$treatment_group, levels = final_order)
+
+plot_data$sex <- factor(plot_data$sex, levels = c("F", "M"))
+plot_data$timepoint <- factor(plot_data$timepoint, levels = c("w5", "w10"))
+
+# Filter for pathways that have significant results in at least one comparison
+significant_pathways <- plot_data %>%
+  filter(stars != "" & !is.na(stars)) %>%
+  pull(pathway) %>%
+  unique()
+
+# Filter data to only include significant pathways
+plot_data_filtered <- plot_data %>%
+  filter(pathway %in% significant_pathways)
+
+# If no significant pathways, include all pathways
+if(nrow(plot_data_filtered) == 0) {
+  cat("No significant pathways found, including all pathways...\n")
+  plot_data_filtered <- plot_data
+}
+
+# Create the enhanced heatmap
+pathway_heatmap_treatment_groups <- ggplot(plot_data_filtered, 
+                                           aes(x = treatment_group, y = pathway_label)) + 
+  
+  # Main heatmap tiles
+  geom_tile(aes(fill = mean_value), colour = "white", size = 1) + 
+  
+  # Color scheme for CLR transformed values
+  scale_fill_gradientn(
+    colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
+                "white", 
+                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"), 
+    name = "CLR Transformed\nAbundance",
+    na.value = "grey90"
+  ) +
+  
+  # Add significance stars with color coding
+  geom_text(aes(label = stars, color = star_color), size = 4, fontface = "bold") + 
+  
+  # Manual color scale for significance stars
+  scale_color_identity() + 
+  
+  # Faceting by sex and timepoint
+  facet_grid(timepoint ~ sex, 
+             labeller = labeller(.multi_line = FALSE)) +
+  
+  # Axes
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  
+  # Labels and theming
+  labs(
+    title = "Metabolic Pathway Abundance by Treatment Group",
+    subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
+                      "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
+                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n"),
+    x = "Treatment Group",
+    y = "Metabolic Pathways"
+  ) + 
+  
+  theme_minimal(base_size = 11) +
+  theme(
+    # Plot background
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.grid = element_blank(),
+    
+    # Axes
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, 
+                               size = 9, colour = "black"),
+    axis.text.y = element_text(size = 9, colour = "black"),
+    axis.title = element_text(size = 11, colour = "black", face = "bold"),
+    axis.ticks = element_blank(),
+    
+    # Facet strips (the grey boxes)
+    strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
+    strip.text = element_text(size = 10, colour = "black", face = "bold",
+                              margin = margin(4, 4, 4, 4)),
+    
+    # Title
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5, 
+                              margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 10, hjust = 0.5, 
+                                 colour = "grey40", margin = margin(b = 15)),
+    
+    # Legend
+    legend.position = "right",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    
+    # Panel spacing and borders
+    panel.spacing = unit(0.2, "lines"),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.8),
+    
+    # Margins
+    plot.margin = margin(15, 15, 15, 15)
+  )
+
+# Print the plot
+print(pathway_heatmap_treatment_groups)
+
+# Alternative version with custom facet labels
+pathway_heatmap_custom_labels <- ggplot(plot_data_filtered, 
+                                        aes(x = treatment_group, y = pathway_label)) + 
+  
+  # Main heatmap tiles
+  geom_tile(aes(fill = mean_value), colour = "white", size = 0.3) + 
+  
+  # Color scheme
+  scale_fill_gradientn(
+    colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
+                "white", 
+                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"),
+    values = scales::rescale(c(min_val, min_val + (avg_val - min_val)*0.5, avg_val, 
+                               avg_val + (max_val - avg_val)*0.5, max_val)),
+    name = "CLR Transformed\nAbundance",
+    na.value = "grey90"
+  ) +
+  
+  # Add significance stars with color coding
+  geom_text(aes(label = stars, color = star_color), size = 3.5, fontface = "plain") + 
+  
+  # Manual color scale for significance stars
+  scale_color_identity() + 
+  
+  # Custom faceting
+  facet_grid(timepoint ~ sex, 
+             labeller = labeller(
+               sex = c("F" = "Female", "M" = "Male"),
+               timepoint = c("w5" = "Week 5", "w10" = "Week 10")
+             )) +
+  
+  # Axes
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  
+  # Labels and theming
+  labs(
+    title = "Metabolic Pathway Abundance by Treatment Group",
+    subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
+                      "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
+                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001"),
+    x = "Treatment Group",
+    y = "Metabolic Pathways"
+  ) + 
+  
+  theme_minimal(base_size = 11) +
+  theme(
+    # Plot background
+    plot.background = element_rect(fill = "white", colour = NA),
+    panel.background = element_rect(fill = "white", colour = NA),
+    panel.grid = element_blank(),
+    
+    # Axes
+    axis.text.x = element_text(angle = 45, hjust = 1, vjust = 1, 
+                               size = 9, colour = "black"),
+    axis.text.y = element_text(size = 9, colour = "black"),
+    axis.title = element_text(size = 11, colour = "black", face = "bold"),
+    axis.ticks = element_blank(),
+    
+    # Facet strips (the grey boxes)
+    strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
+    strip.text = element_text(size = 10, colour = "black", face = "bold",
+                              margin = margin(4, 4, 4, 4)),
+    
+    # Title
+    plot.title = element_text(size = 14, face = "bold", hjust = 0.5, 
+                              margin = margin(b = 5)),
+    plot.subtitle = element_text(size = 9, hjust = 0.5, 
+                                 colour = "grey40", margin = margin(b = 15)),
+    
+    # Legend
+    legend.position = "right",
+    legend.title = element_text(size = 10, face = "bold"),
+    legend.text = element_text(size = 9),
+    
+    # Panel spacing and borders
+    panel.spacing = unit(0.2, "lines"),
+    panel.border = element_rect(colour = "black", fill = NA, size = 0.8),
+    
+    # Margins
+    plot.margin = margin(15, 15, 15, 15)
+  )
+
+# Print the custom labels version
+print(pathway_heatmap_custom_labels)
+
+# Save main pathway heatmap
+ggsave("/heatmap_treatment_groups_clr_pathways_pups.svg",
+       plot = pathway_heatmap_treatment_groups,
+       width = 16,
+       height = 18,
+       device = "svg",
+       dpi = 300)
+
+# Save custom labels pathway heatmap
+ggsave("/heatmap_treatment_groups_custom_labels_clr_pathways_pups.svg",
+       plot = pathway_heatmap_custom_labels,
+       width = 16,
+       height = 18,
+       device = "svg",
+       dpi = 300)
