@@ -64,7 +64,7 @@ outliers_bw_and_bwgain_wk12_pups_grubbs <- bw_and_bwgain_wk_12_pups %>%
 write.csv(x = ., 
           file = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_bw_and_bw_gain_wk_12_pups_grubbs.csv")
 
-#Plotting Figure S2A----------
+#Plotting Figure 1B----------
 
 bw_and_bwgain_wk_12_pups_wo_outliers = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/bw_and_bwgain_wk_12_pups_wo_outliers.csv")
 
@@ -108,7 +108,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2A.svg",
        height = 6)
 
 
-#Plotting Figure S2B---------
+#Plotting Figure Main 1C ---------
 
 tidy_data_wk12pups_food_energy_intake = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/tidy_data_wk12pups_food_energy_intake.csv")
 
@@ -172,7 +172,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS2B.svg",
        width = 15,
        height = 6)
 
-#Plotting Figure S2C---------
+#Plotting Figure S1F---------
 
 #Energy intake
 
