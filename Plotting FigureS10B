@@ -6,7 +6,7 @@ library(tidyverse)
 library(patchwork)
 
 
-#Plotting FigureS7B----------
+#Plotting FigureS10B----------
 
 RNAscope_set1_metadata <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/RNAscope_set1_metadata.csv")
 
