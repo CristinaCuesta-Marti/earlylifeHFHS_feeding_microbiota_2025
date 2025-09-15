@@ -1,0 +1,180 @@
+"","Total","Expected","Hits","Raw p","-log10(p)","Holm adjust","FDR","Impact"
+"Arrhythmogenic right ventricular cardiomyopathy",88,0.57678,5,0.00026553,3.5759,0.092138,0.092138,5.176e-05
+"Viral myocarditis",94,0.6161,4,0.003289,2.4829,1,0.43846,0
+"Hypertrophic cardiomyopathy",103,0.67509,4,0.0045644,2.3406,1,0.43846,0
+"Dilated cardiomyopathy",106,0.69476,4,0.0050542,2.2963,1,0.43846,0
+"Human cytomegalovirus infection",260,1.7041,6,0.0069195,2.1599,1,0.48021,0.001174
+"Pentose phosphate pathway",71,0.46536,3,0.011176,1.9517,1,0.64637,0.033384
+"Antigen processing and presentation",87,0.57022,3,0.019254,1.7155,1,0.95446,0.019915
+"Cardiac muscle contraction",93,0.60955,3,0.022932,1.6396,1,0.99466,0
+"Cell adhesion molecules",179,1.1732,4,0.029577,1.529,1,1,0
+"Vasopressin-regulated water reabsorption",46,0.3015,2,0.03638,1.4391,1,1,0
+"Base excision repair",47,0.30805,2,0.037839,1.4221,1,1,0
+"TNF signaling pathway",118,0.77341,3,0.042073,1.376,1,1,0.00018315
+"Fanconi anemia pathway",52,0.34082,2,0.045463,1.3423,1,1,0
+"Herpes simplex virus 1 infection",216,1.4157,4,0.052849,1.277,1,1,0.00023132
+"Allograft rejection",61,0.39981,2,0.060452,1.2186,1,1,0
+"Inflammatory bowel disease",62,0.40637,2,0.06221,1.2061,1,1,0
+"Graft-versus-host disease",62,0.40637,2,0.06221,1.2061,1,1,0
+"Signaling pathways regulating pluripotency of stem cells",140,0.9176,3,0.063843,1.1949,1,1,0.001052
+"Basal cell carcinoma",64,0.41948,2,0.065778,1.1819,1,1,0.033333
+"Type I diabetes mellitus",70,0.4588,2,0.076877,1.1142,1,1,0
+"Human immunodeficiency virus 1 infection",246,1.6124,4,0.077365,1.1115,1,1,0.00089777
+"Non-homologous end-joining",13,0.085206,1,0.081984,1.0863,1,1,0
+"Hippo signaling pathway",158,1.0356,3,0.084817,1.0715,1,1,0.0066977
+"Human papillomavirus infection",362,2.3727,5,0.087933,1.0558,1,1,0.00039308
+"Adrenergic signaling in cardiomyocytes",166,1.088,3,0.094978,1.0224,1,1,0
+"Autoimmune thyroid disease",80,0.52434,2,0.096557,1.0152,1,1,0
+"Cytosolic DNA-sensing pathway",84,0.55056,2,0.10479,0.97966,1,1,0.001747
+"Cushing syndrome",175,1.147,3,0.10698,0.9707,1,1,0.0014093
+"Prion disease",278,1.8221,4,0.10879,0.96339,1,1,0.0018307
+"Peroxisome",87,0.57022,2,0.11109,0.95431,1,1,0
+"Pertussis",87,0.57022,2,0.11109,0.95431,1,1,0
+"Phagosome",184,1.206,3,0.11954,0.92247,1,1,0
+"Cytokine-cytokine receptor interaction",294,1.927,4,0.12639,0.8983,1,1,0
+"Valine, leucine and isoleucine degradation",99,0.64888,2,0.13721,0.8626,1,1,0.31822
+"Tuberculosis",198,1.2978,3,0.14012,0.8535,1,1,0.00016101
+"Fatty acid degradation",102,0.66854,2,0.14395,0.8418,1,1,1.0508
+"Huntington disease",314,2.0581,4,0.14996,0.82403,1,1,0
+"Melanogenesis",106,0.69476,2,0.15303,0.81523,1,1,0.0063425
+"Maturity onset diabetes of the young",27,0.17697,1,0.16288,0.78813,1,1,0
+"TGF-beta signaling pathway",111,0.72753,2,0.16453,0.78375,1,1,0.00042955
+"Prostate cancer",111,0.72753,2,0.16453,0.78375,1,1,0.0032787
+"Toxoplasmosis",112,0.73408,2,0.16685,0.77766,1,1,0.00076805
+"Asthma",30,0.19663,1,0.17928,0.74646,1,1,0
+"Kaposi sarcoma-associated herpesvirus infection",228,1.4944,3,0.18776,0.7264,1,1,0.00046264
+"RNA polymerase",32,0.20974,1,0.19004,0.72116,1,1,0
+"Epstein-Barr virus infection",231,1.514,3,0.19274,0.71502,1,1,0.00019157
+"Glycosaminoglycan biosynthesis - chondroitin sulfate or dermatan sulfate",33,0.21629,1,0.19537,0.70915,1,1,0
+"Aldosterone synthesis and secretion",125,0.81929,2,0.19749,0.70446,1,1,0.0038444
+"Cholinergic synapse",125,0.81929,2,0.19749,0.70446,1,1,0.013934
+"Glycosaminoglycan biosynthesis - heparan sulfate or heparin",35,0.2294,1,0.20592,0.68631,1,1,0
+"Pancreatic secretion",130,0.85206,2,0.20946,0.6789,1,1,0
+"Staphylococcus aureus infection",130,0.85206,2,0.20946,0.6789,1,1,0.00067476
+"DNA replication",36,0.23596,1,0.21114,0.67543,1,1,0
+"Primary immunodeficiency",36,0.23596,1,0.21114,0.67543,1,1,0
+"Nitrogen metabolism",37,0.24251,1,0.21633,0.66489,1,1,0.00046253
+"Thyroid cancer",37,0.24251,1,0.21633,0.66489,1,1,0.0033333
+"Tryptophan metabolism",135,0.88483,2,0.22151,0.65461,1,1,0.0054603
+"cAMP signaling pathway",249,1.632,3,0.22332,0.65107,1,1,0.069241
+"Relaxin signaling pathway",136,0.89139,2,0.22393,0.6499,1,1,0.039767
+"Human T-cell leukemia virus 1 infection",252,1.6517,3,0.22852,0.64108,1,1,0.00017889
+"Diabetic cardiomyopathy",256,1.6779,3,0.23548,0.62805,1,1,4.7893e-05
+"Salmonella infection",257,1.6845,3,0.23723,0.62484,1,1,0.00073964
+"Thermogenesis",261,1.7107,3,0.24424,0.61219,1,1,0.0055098
+"Dopaminergic synapse",148,0.97004,2,0.25307,0.59676,1,1,0.0089984
+"Intestinal immune network for IgA production",45,0.29494,1,0.25666,0.59065,1,1,0
+"Breast cancer",150,0.98315,2,0.25794,0.58848,1,1,0.0014706
+"Thiamine metabolism",46,0.3015,1,0.26155,0.58244,1,1,0.0064011
+"Systemic lupus erythematosus",153,1.0028,2,0.26526,0.57633,1,1,0
+"Folate transport and metabolism",47,0.30805,1,0.26641,0.57444,1,1,0
+"Ubiquitin mediated proteolysis",154,1.0094,2,0.2677,0.57236,1,1,0
+"Gastric cancer",154,1.0094,2,0.2677,0.57236,1,1,0.0024748
+"Glycosaminoglycan degradation",48,0.31461,1,0.27125,0.56664,1,1,0.001773
+"Cocaine addiction",56,0.36704,1,0.30879,0.51034,1,1,0.0040123
+"JAK-STAT signaling pathway",171,1.1208,2,0.30909,0.50992,1,1,0.0014401
+"Nucleotide excision repair",58,0.38015,1,0.31787,0.49775,1,1,0
+"Wnt signaling pathway",176,1.1536,2,0.3212,0.49323,1,1,0.061542
+"Endometrial cancer",59,0.3867,1,0.32237,0.49164,1,1,0.0038647
+"Influenza A",177,1.1601,2,0.32362,0.48997,1,1,0
+"Cholesterol metabolism",60,0.39326,1,0.32684,0.48566,1,1,0
+"cGMP-PKG signaling pathway",182,1.1929,2,0.33567,0.47409,1,1,0
+"beta-Alanine metabolism",64,0.41948,1,0.34443,0.4629,1,1,0.0085022
+"Primary bile acid biosynthesis",65,0.42603,1,0.34875,0.45748,1,1,5.7195e-05
+"Hepatocellular carcinoma",189,1.2388,2,0.35244,0.45291,1,1,0.0015935
+"alpha-Linolenic acid metabolism",69,0.45225,1,0.36578,0.43678,1,1,0.0033937
+"Fatty acid elongation",69,0.45225,1,0.36578,0.43678,1,1,1.3916
+"Regulation of lipolysis in adipocytes",71,0.46536,1,0.37412,0.42699,1,1,0
+"Acute myeloid leukemia",71,0.46536,1,0.37412,0.42699,1,1,0
+"Propanoate metabolism",73,0.47846,1,0.38236,0.41753,1,1,0.041779
+"RIG-I-like receptor signaling pathway",74,0.48502,1,0.38644,0.41292,1,1,0
+"Butanoate metabolism",74,0.48502,1,0.38644,0.41292,1,1,0.033898
+"Leishmaniasis",76,0.49813,1,0.39452,0.40393,1,1,0
+"Bacterial invasion of epithelial cells",77,0.50468,1,0.39852,0.39955,1,1,0.0011074
+"Proteoglycans in cancer",211,1.383,2,0.40416,0.39345,1,1,0.00012563
+"Amphetamine addiction",79,0.51779,1,0.40644,0.391,1,1,0.0023338
+"Alcoholism",217,1.4223,2,0.41794,0.37888,1,1,0.0070707
+"RNA degradation",83,0.54401,1,0.42198,0.37471,1,1,0
+"Cortisol synthesis and secretion",84,0.55056,1,0.4258,0.37079,1,1,0.0014027
+"NOD-like receptor signaling pathway",222,1.4551,2,0.42931,0.36723,1,1,0.0021386
+"Prolactin signaling pathway",85,0.55712,1,0.4296,0.36694,1,1,0
+"Pathways of neurodegeneration - multiple diseases",513,3.3624,4,0.43579,0.36073,1,1,0.00020202
+"Glycine, serine and threonine metabolism",88,0.57678,1,0.44084,0.35572,1,1,0.048516
+"Viral carcinogenesis",228,1.4944,2,0.44281,0.35379,1,1,0
+"Colorectal cancer",89,0.58333,1,0.44454,0.35209,1,1,0.0038874
+"ECM-receptor interaction",90,0.58989,1,0.44821,0.34851,1,1,0
+"Rheumatoid arthritis",90,0.58989,1,0.44821,0.34851,1,1,0
+"Cytoskeleton in muscle cells",232,1.5206,2,0.45171,0.34514,1,1,0
+"Th1 and Th2 cell differentiation",91,0.59644,1,0.45187,0.34499,1,1,0
+"Adherens junction",92,0.603,1,0.45549,0.34152,1,1,0
+"Renin secretion",93,0.60955,1,0.4591,0.3381,1,1,0
+"PPAR signaling pathway",94,0.6161,1,0.46268,0.33472,1,1,0
+"Hematopoietic cell lineage",94,0.6161,1,0.46268,0.33472,1,1,0
+"Viral protein interaction with cytokine and cytokine receptor",95,0.62266,1,0.46623,0.3314,1,1,0
+"Thyroid hormone synthesis",95,0.62266,1,0.46623,0.3314,1,1,0.00027996
+"Regulation of actin cytoskeleton",239,1.5665,2,0.4671,0.33059,1,1,0.0037423
+"Glyoxylate and dicarboxylate metabolism",96,0.62921,1,0.46977,0.32812,1,1,0.0029963
+"Amyotrophic lateral sclerosis",389,2.5496,3,0.47217,0.32591,1,1,0
+"Longevity regulating pathway",98,0.64232,1,0.47676,0.3217,1,1,0
+"Insulin secretion",98,0.64232,1,0.47676,0.3217,1,1,0.0015664
+"GABAergic synapse",99,0.64888,1,0.48023,0.31855,1,1,0.0045455
+"Glycerolipid metabolism",101,0.66199,1,0.48709,0.31239,1,1,0.0078321
+"mRNA surveillance pathway",104,0.68165,1,0.49722,0.30345,1,1,0
+"Morphine addiction",104,0.68165,1,0.49722,0.30345,1,1,0.0021212
+"Central carbon metabolism in cancer",106,0.69476,1,0.50386,0.29769,1,1,0
+"Alzheimer disease",408,2.6742,3,0.50415,0.29744,1,1,0.00035377
+"Circadian entrainment",108,0.70787,1,0.51041,0.29208,1,1,0.018905
+"Th17 cell differentiation",109,0.71442,1,0.51366,0.28933,1,1,0
+"NF-kappa B signaling pathway",110,0.72097,1,0.51688,0.28661,1,1,0
+"Glutathione metabolism",111,0.72753,1,0.52008,0.28393,1,1,0.0048309
+"Calcium signaling pathway",265,1.7369,2,0.522,0.28233,1,1,0.0058275
+"Nucleocytoplasmic transport",118,0.77341,1,0.54193,0.26606,1,1,0
+"Bile secretion",275,1.8024,2,0.54212,0.26591,1,1,0
+"Lysine degradation",120,0.78652,1,0.54799,0.26123,1,1,0.020927
+"Amoebiasis",121,0.79307,1,0.55099,0.25886,1,1,0
+"Growth hormone synthesis, secretion and action",121,0.79307,1,0.55099,0.25886,1,1,0.0066964
+"Leukocyte transendothelial migration",123,0.80618,1,0.55693,0.2542,1,1,0
+"C-type lectin receptor signaling pathway",124,0.81273,1,0.55987,0.25191,1,1,0
+"Glutamatergic synapse",124,0.81273,1,0.55987,0.25191,1,1,0.0039124
+"Complement and coagulation cascades",125,0.81929,1,0.56279,0.24965,1,1,0
+"Parathyroid hormone synthesis, secretion and action",127,0.8324,1,0.56858,0.24521,1,1,0.0032726
+"Insulin resistance",130,0.85206,1,0.57712,0.23873,1,1,0.00021786
+"Glucagon signaling pathway",130,0.85206,1,0.57712,0.23873,1,1,0.018954
+"Thyroid hormone signaling pathway",131,0.85861,1,0.57993,0.23662,1,1,0
+"ATP-dependent chromatin remodeling",136,0.89139,1,0.59371,0.22643,1,1,0
+"Apoptosis",139,0.91105,1,0.60176,0.22058,1,1,0
+"Osteoclast differentiation",139,0.91105,1,0.60176,0.22058,1,1,0.0071405
+"Lysosome",140,0.9176,1,0.60441,0.21867,1,1,0
+"Estrogen signaling pathway",142,0.93071,1,0.60965,0.21492,1,1,0
+"Spinocerebellar ataxia",148,0.97004,1,0.62498,0.20413,1,1,0
+"Apelin signaling pathway",148,0.97004,1,0.62498,0.20413,1,1,0.018378
+"AMPK signaling pathway",150,0.98315,1,0.62996,0.20069,1,1,0
+"Alcoholic liver disease",152,0.99625,1,0.63487,0.19732,1,1,0.00034698
+"Oxidative phosphorylation",153,1.0028,1,0.6373,0.19566,1,1,0
+"Protein digestion and absorption",155,1.0159,1,0.64211,0.19239,1,1,0
+"mTOR signaling pathway",162,1.0618,1,0.65848,0.18146,1,1,0.0013626
+"Non-alcoholic fatty liver disease",164,1.0749,1,0.66302,0.17847,1,1,0
+"Coronavirus disease - COVID-19",344,2.2547,2,0.66493,0.17723,1,1,0
+"Oxytocin signaling pathway",165,1.0815,1,0.66526,0.17701,1,1,0
+"Hepatitis B",165,1.0815,1,0.66526,0.17701,1,1,0.00071863
+"Retrograde endocannabinoid signaling",172,1.1273,1,0.68059,0.16712,1,1,0.0060241
+"Serotonergic synapse",178,1.1667,1,0.69317,0.15916,1,1,0.0019425
+"Protein processing in endoplasmic reticulum",181,1.1863,1,0.69927,0.15535,1,1,0
+"Axon guidance",182,1.1929,1,0.70128,0.15411,1,1,0
+"Efferocytosis",184,1.206,1,0.70526,0.15165,1,1,0.003937
+"PI3K-Akt signaling pathway",371,2.4316,2,0.70539,0.15157,1,1,0.0061386
+"Cellular senescence",187,1.2257,1,0.71113,0.14805,1,1,0
+"ABC transporters",191,1.2519,1,0.71878,0.1434,1,1,0
+"Motor proteins",198,1.2978,1,0.73169,0.13568,1,1,0
+"Chemokine signaling pathway",198,1.2978,1,0.73169,0.13568,1,1,0.010377
+"Steroid hormone biosynthesis",200,1.3109,1,0.73527,0.13356,1,1,0
+"Pathways in cancer",579,3.7949,3,0.74022,0.13064,1,1,0.0017753
+"Purine metabolism",235,1.5403,1,0.79081,0.10193,1,1,0.031815
+"Ras signaling pathway",243,1.5927,1,0.8018,0.095935,1,1,0.00021478
+"Chemical carcinogenesis - receptor activation",257,1.6845,1,0.81967,0.086359,1,1,0
+"Endocytosis",276,1.809,1,0.84142,0.074987,1,1,0
+"Chemical carcinogenesis - reactive oxygen species",286,1.8745,1,0.85181,0.069658,1,1,0
+"Parkinson disease",300,1.9663,1,0.86523,0.062867,1,1,0
+"MAPK signaling pathway",304,1.9925,1,0.86884,0.061058,1,1,0
+"Neuroactive ligand-receptor interaction",445,2.9167,1,0.95003,0.022265,1,1,0
+"Olfactory transduction",1219,7.9897,1,0.99981,8.2123e-05,1,1,0.01052
