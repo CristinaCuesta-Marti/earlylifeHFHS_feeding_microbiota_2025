@@ -52,7 +52,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS1A.svg",
        width = 8,
        height = 4)
 
-#Plotting Figure S1C-----------------
+#Plotting Figure S1B-----------------
 
 bw_and_bwgain_dams = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/bw_and_bwgain_dams.csv")
 
@@ -233,7 +233,7 @@ daily_food_energy_intake_dams_grubbs <- daily_food_energy_intake_dams %>%
           file = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_daily_energy_intake_dams_grubbs.csv")
 
 
-#Plotting Figure S1D-----------------
+#Plotting Figure S1C-----------------
 daily_food_energy_intake_dams_wo_outliers = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/daily_food_energy_intake_dams_wo_outliers.csv")
 
 #Food intake
@@ -415,7 +415,7 @@ cort_serum_liver_tissues_dams_grubbs <- cort_serum_liver_tissues_dams %>%
   write.csv(x = ., 
           file = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_cort_serum_liver_tissues_dams_grubbs.csv")
 
-#Plotting FigureS1E-------
+#Plotting FigureS1D-------
 
 cort_serum_liver_tissues_dams_wo_outliers = read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/cort_serum_liver_tissues_dams_wo_outliers.csv")
 
@@ -469,7 +469,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS1E.svg",
        device = "svg")
 
 
-#Plotting FigureS1F-------
+#Plotting FigureS1E-------
 
 #Tissues length of dams normalized to body weight
 
@@ -520,7 +520,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS1F.svg",
        device = "svg")
 
 
-#Plotting FigureS1G -------------
+#Plotting FigureS4E -------------
 genus_relativeabundance_dams = readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/genus_relativeabundance_dam.xlsx")
 
 plot_abundant_genera_CT_HFHS_dams <- genus_relativeabundance_dams %>%
@@ -564,7 +564,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS1G.svg",
        height = 4)
 
 
-#Plotting FigureS1H------------
+#Plotting FigureS4F------------
 
 Bif_plot_relativeabundance_dams = genus_relativeabundance_dams %>%
   filter(Genus == "Bifidobacterium") %>%
@@ -600,7 +600,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS1H.svg",
        height = 4)
 
 
-#Plotting Figure S1I------------
+#Plotting Figure S4G------------
 longum_relativeabundance_dams = readxl::read_xlsx(path = "earlylifeHFHS_eating_microbiota_2025/data/longum_relativeabundance_dams.xlsx")
 
 Bif_longum_plot_relativeabundance_dams = longum_relativeabundance_dams %>%
