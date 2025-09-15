@@ -1,0 +1,13 @@
+"genus_species","effect","group","term","estimate","std.error","statistic","df","p.value","p.adj"
+"Bifidobacterium pseudolongum","fixed",NA,"dietHFHS",-0.0873984440454639,0.0191883595648481,-4.5547637227714,14.8494921601226,0.000389040938024236,0.00116712281407271
+"Bifidobacterium pseudolongum","fixed",NA,"treatmentFOS+GOS",0.0888945532896717,0.0195398776721633,4.54939149472322,13.3084842554903,0.000514830556179519,0.00116712281407271
+"Bifidobacterium pseudolongum","fixed",NA,"treatmentB. longum APC1472",-0.00824757077854419,0.0191233461010012,-0.431282827544097,14.4883775170315,0.672610925992371,0.672610925992371
+"Bifidobacterium pseudolongum","ran_pars","dam_cage","sd__(Intercept)",0.0233222482296361,NA,NA,NA,NA,NA
+"Bifidobacterium pseudolongum","ran_pars","cohort","sd__(Intercept)",5.87323654426461e-06,NA,NA,NA,NA,NA
+"Bifidobacterium pseudolongum","ran_pars","Residual","sd__Observation",0.064706223704817,NA,NA,NA,NA,NA
+"Bifidobacterium longum","fixed",NA,"dietHFHS",-2.47902190334225e-06,0.000549756118094953,-0.00450931207811329,20.3289957347084,0.996446059667178,1
+"Bifidobacterium longum","fixed",NA,"treatmentFOS+GOS",9.67175351440385e-05,0.000569645713176952,0.169785417333589,19.409159960536,0.866936084127377,1
+"Bifidobacterium longum","fixed",NA,"treatmentB. longum APC1472",0.00339307062657231,0.000549518597900431,6.17462382444627,20.2308694186123,4.70180521377429e-06,1.88072208550972e-05
+"Bifidobacterium longum","ran_pars","dam_cage","sd__(Intercept)",0.000847133621983532,NA,NA,NA,NA,NA
+"Bifidobacterium longum","ran_pars","cohort","sd__(Intercept)",0,NA,NA,NA,NA,NA
+"Bifidobacterium longum","ran_pars","Residual","sd__Observation",0.00116274771468648,NA,NA,NA,NA,NA

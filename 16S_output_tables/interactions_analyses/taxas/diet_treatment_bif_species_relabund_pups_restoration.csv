@@ -1,0 +1,6 @@
+"genus_species","sex","timepoint","statistic_diet","p.adj_diet","statistic_treatment_FOSGOS","p.adj_treatment_FOSGOS","statistic_treatment_1472","p.adj_treatment_1472","restoration_FOSGOS","restoration_1472"
+"Bifidobacterium longum","Male","week 10",-0.987248640085669,0.405290491752876,1.12185273433726e-15,1,8.40480927976508,2.45493283558658e-09,"not restored","not restored"
+"Bifidobacterium pseudolongum","Female","week 5",-2.69340576281884,0.0637254373831955,2.65824830283296,0.0654174225786886,0.442367869887659,1,"not restored","not restored"
+"Bifidobacterium pseudolongum","Female","week 10",-0.680172062441554,0.520507430609414,2.76591178596615,0.0717118804244269,0.00762052688284617,0.994096467996266,"not restored","not restored"
+"Bifidobacterium pseudolongum","Male","week 5",-5.27394391569328,0.00145825059828621,4.98335363810038,0.00114213904136836,-0.0217084968648039,1,"restored","not restored"
+"Bifidobacterium pseudolongum","Male","week 10",-1.36042886043183,0.209835663060721,3.66480301743378,0.00863535576843088,-0.972628002938538,0.348515723844803,"not restored","not restored"
