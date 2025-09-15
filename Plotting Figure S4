@@ -64,7 +64,7 @@ tidy_data_wk10_pups_grubbs = tidy_data_wk10_pups %>%
   arrange(p_grubbs) 
 
 
-#Plotting Figure S4A------
+#Plotting Figure S1G------
 
 data_Wk10_without_outliers <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/Tidy_data_Wk10_without_outliers.csv")
 
@@ -268,7 +268,7 @@ tidy_data_Wk_12_Pups_molecularELISA_striatum_grubbs <- tidy_data_Wk_12_Pups_mole
             path = "earlylifeHFHS_eating_microbiota_2025/outliers/outliers_tidy_data_Wk_12_Pups_molecularELISA_striatumHPLC_grubbs.csv")
 
 
-#Plotting Figure S4B---------
+#Plotting Figure S2A---------
 
 wk_12_Pups_molecularELISA_striatum_wo_outliers <- read.csv(path = "earlylifeHFHS_eating_microbiota_2025/data/wk_12_Pups_molecularELISA_striatum_wo_outliers.csv")
 
@@ -335,7 +335,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS4B.svg",
        height = 7
        )
 
-#Plotting Figure S4C-------------
+#Plotting Figure S4I-------------
 
 
 CORT_HYP_fresh_wk12pups_wo_outliers = wk_12_Pups_molecularELISA_striatum_wo_outliers %>% 
@@ -387,7 +387,7 @@ ggsave(filename = "earlylifeHFHS_eating_microbiota_2025/figures/FigureS4C.svg",
        height = 5)
 
 
-#Plotting Figure S4D-------------
+#Plotting Figure S2B-------------
 
 locomotoractivity_12h_wk10_wo_outliers = data_Wk10_without_outliers %>% 
   mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
