@@ -1,0 +1,482 @@
+#Load the files-----------
+
+SCFA_wk5_dams = read.csv("data/SCFA_wk5_dams_removed_tech_errors.csv")
+SCFA_wk12 = read.csv("data/SCFA_wk12_removed_tech_errors.csv")
+SCFA_wk12_one_rep_geomean = read.csv("data/SCFAs_wk12_one_rep_geomean.csv")
+SCFA_wk12_one_rep_average_wo_outliers = read.csv("data/SCFAs_wk12_one_rep_geomean_wo_outliers.csv")
+SCFA_wk5_wk12_dams = read.csv("data/SCFA_wk5_wk12_dams_removed_tech_errors.csv")
+
+
+# Grubbs' test outliers for SCFA_wk12_one_rep_geomean-----------
+SCFA_wk12_one_rep_geomean_grubbs <- SCFA_wk12_one_rep_geomean %>%
+  pivot_longer(!c(Sample, sample, timepoint,age, dam_cage, sex, 
+                  cohort, diet, treatment, legend)) %>%
+  group_by(sex, name, legend) %>%
+  nest() %>%
+  mutate(n = map_dbl(data, ~ sum(!is.na(as.numeric(.x$value)))),  # Count non-NA values
+         
+         G = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[1]]
+           } else {
+             NA  # Not enough data to perform the test
+           }
+         }),
+         U = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$statistic[[2]]
+           } else {
+             NA
+           }
+         }),
+         grubbs = map(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$alternative
+           } else {
+             NA
+           }
+         }),
+         p_grubbs = map_dbl(data, ~ {
+           vals <- as.numeric(.x$value)
+           if (length(vals) > 2 && all(!is.na(vals))) {
+             grubbs.test(vals)$p.value
+           } else {
+             NA
+           }
+         })) %>%
+  mutate(G = ifelse(is.na(G), NA, signif(G, 3)),
+         U = ifelse(is.na(U), NA, signif(U, 3)),
+         grubbs = ifelse(is.na(grubbs), NA, unlist(grubbs)),
+         p_grubbs = ifelse(is.na(p_grubbs), NA, signif(p_grubbs, 3))) %>%
+  
+  dplyr::select(-data) %>%
+  arrange(p_grubbs) %>%
+  write.csv(., "outputs/SCFA_wk12pups_one_Rep_geomean_grubbs.csv")
+
+
+
+#Plotting Figure S5A (SCFAs-wk5) ----------------------
+
+
+whisker_plot_SCFA_wk5 = SCFA_wk5_dams %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Sample, sample, timepoint,age, dam_cage, sex, 
+                  cohort, diet, treatment, legend)) %>% 
+  filter(age != "dam") %>%
+  ggplot(aes(x = sex, y = value, fill = legend, colour = legend)) +
+  
+  # Change to boxplot
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  #stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "black", colour = "black", 
+              # position = position_dodge(width = 0.9)) +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Abundance (µmol/g)") +
+  theme(legend.position = "bottom", 
+        legend.background = element_rect(colour = "black"))
+print(whisker_plot_SCFA_wk5)
+
+ggsave("/whisker_plot_SCFA_wk5.svg", 
+       plot = whisker_plot_SCFA_wk5, 
+       device = "svg")
+
+whisker_plot_SCFA_wk5 = SCFA_wk5_dams %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Sample, sample, timepoint,age, dam_cage, sex, 
+                  cohort, diet, treatment, legend)) %>% 
+  filter(age != "dam") %>%
+  ggplot(aes(x = sex, y = value, fill = legend, colour = legend)) +
+  
+  # Change to boxplot
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +  
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Abundance (µmol/g)") +
+  theme(
+    legend.position = "bottom", 
+    legend.background = element_rect(colour = "black"),
+    strip.background = element_rect(fill = "lightgray", linewidth = 0.5),
+    strip.text = element_text(margin = margin(t = 1, b = 1, unit = "pt")),
+    panel.spacing.y = unit(1.5, "lines")
+  )
+print(whisker_plot_SCFA_wk5)
+
+ggsave("/whisker_plot_SCFA_wk5.svg", 
+       plot = whisker_plot_SCFA_wk5, 
+       device = "svg")
+
+#Plotting Figure S5B (SCFAs-wk12-One replicate-GEO mean - WITHOUT OUTLIERS-)----------------------
+
+
+SCFA_wk12_one_rep_average_wo_outliers_long <- SCFA_wk12_one_rep_average_wo_outliers %>%
+  pivot_longer(
+    cols = -c(Sample, sample, timepoint, age, dam_cage, sex, cohort, diet, treatment, legend),
+    names_to = "metabolite",
+    values_to = "value"
+  )
+
+# Standardize Sample IDs in outliers_to_remove to match SCFA dataset
+
+outliers_to_remove <- tribble(
+  ~sample,       ~sex, ~legend, ~metabolite,
+  408,   "F",  "Control Vehicle", "Acetate",
+  408,   "F",  "Control Vehicle", "Total",
+  435,   "F",  "HFHS B. longum APC1472", "Acetate",
+  116,   "M",  "Control Vehicle", "Total",
+  110,   "M",  "HFHS Vehicle", "IsoValerate",
+  119,   "M",  "HFHS Vehicle", "Butyrate",
+  243,   "M",  "HFHS FOS+GOS",    "IsoButyrate",
+  243,   "M",  "HFHS FOS+GOS",    "IsoValerate",
+  136,   "M",  "HFHS B. longum APC1472", "Acetate"
+)
+
+# Remove specified outliers from the dataset
+SCFA_wk12_cleaned <- SCFA_wk12_one_rep_average_wo_outliers_long %>%
+  anti_join(outliers_to_remove, by = c("sample", "sex", "legend", "metabolite"))
+
+nrow(SCFA_wk12_cleaned)
+
+# Plot cleaned data
+
+whisker_plot_SCFA_wk12_cleaned <- SCFA_wk12_cleaned %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  ggplot(aes(x = sex, y = value, fill = legend, colour = legend)) +
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472" = "#e1c180"), drop = FALSE) +
+  facet_wrap(~metabolite, scales = "free_y") +
+  scale_y_continuous(expand = expansion(mult = c(0.05, 0.1))) +  
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Abundance (µmol/g)") +
+  theme(
+    legend.position = "bottom", 
+    legend.background = element_rect(colour = "black"),
+    strip.background = element_rect(fill = "lightgray", linewidth = 0.5),
+      strip.text = element_text(margin = margin(t = 1, b = 1, unit = "pt")),
+    panel.spacing.y = unit(1.5, "lines")
+  )
+
+print(whisker_plot_SCFA_wk12_cleaned)
+
+ggsave("/whisker_plot_SCFA_wk12_one_rep_average_wo_outliers.svg", 
+       plot = whisker_plot_SCFA_wk12_cleaned, 
+       device = "svg")
+
+
+#alternative plots wk 12------------------------
+#Plotting SCFAs-wk12- Box-whisker plot--
+
+
+whisker_plot_SCFA_wk12 = SCFA_wk12 %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Sample, sample, timepoint,age, dam_cage, sex, 
+                  cohort, diet, treatment, legend)) %>% 
+  ggplot(aes(x = sex, y = value, fill = legend, colour = legend)) +
+  
+  # Change to boxplot
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  #stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "black", colour = "black", 
+               #position = position_dodge(width = 0.9)) +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Abundance (µmol/g)") +
+  theme(legend.position = "bottom", 
+        legend.background = element_rect(colour = "black"))
+print(whisker_plot_SCFA_wk12)
+
+ggsave("/whisker_plot_SCFA_wk12.svg", 
+       plot = whisker_plot_SCFA_wk12, 
+       device = "svg")
+
+#Plotting SCFAs-wk12-One replicate-Geomeatric mean- ---
+
+
+whisker_plot_SCFA_wk12_one_rep_geomean = SCFA_wk12_one_rep_geomean %>%
+  mutate(legend = factor(legend, levels = c("Control Vehicle",
+                                            "HFHS Vehicle",
+                                            "HFHS FOS+GOS",
+                                            "HFHS B. longum APC1472"))) %>%
+  pivot_longer(!c(Sample, sample, timepoint,age, dam_cage, sex, 
+                  cohort, diet, treatment, legend)) %>% 
+  ggplot(aes(x = sex, y = value, fill = legend, colour = legend)) +
+  
+  # Change to boxplot
+  geom_boxplot(position = position_dodge(width = 0.9), alpha = 0.7, outlier.shape = NA) + 
+  geom_jitter(shape = 21, position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.9), 
+              size = 2, colour = "black") +
+  #stat_summary(fun = mean, geom = "point", shape = 23, size = 3, fill = "black", colour = "black", 
+  #position = position_dodge(width = 0.9)) +
+  geom_vline(xintercept = 1.5, colour = "darkgray", linetype = 'dashed') +
+  scale_fill_manual(values = c("Control Vehicle" = "#a0a0a4",
+                               "HFHS Vehicle"    = "#f94040", 
+                               "HFHS FOS+GOS"    = "#addead", 
+                               "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  
+  scale_colour_manual(values = c("Control Vehicle" = "#a0a0a4",
+                                 "HFHS Vehicle"    = "#f94040", 
+                                 "HFHS FOS+GOS"    = "#addead", 
+                                 "HFHS B. longum APC1472"       = "#e1c180"), drop = FALSE) +
+  facet_wrap(~name, scales = "free_y") +
+  theme_bw() +
+  xlab(NULL) + 
+  ylab("Abundance (µmol/g)") +
+  theme(legend.position = "bottom", 
+        legend.background = element_rect(colour = "black"))
+print(whisker_plot_SCFA_wk12_one_rep_geomean)
+
+ggsave("/whisker_plot_SCFA_wk12_one_rep_geomean.svg", 
+       plot = whisker_plot_SCFA_wk12_one_rep_geomean, 
+       device = "svg")
+
+
+#Stats restoration Contrasts pairwise week 5------------
+
+
+library(dplyr)
+library(tidyr)
+library(janitor)
+library(rstatix)
+
+diet_SCFA_wk5_dams <- SCFA_wk5_dams %>%
+  filter(age != "dam") %>%
+  pivot_longer(
+    cols = c(Acetate:Total),
+    names_to = "metabolite",
+    values_to = "value"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(
+    treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+    diet = factor(diet, levels = c("Control", "HFHS"))
+  ) %>%
+  filter(treatment == "Vehicle") %>%
+  group_by(sex, metabolite) %>%
+  pairwise_t_test(value ~ diet, pool.sd = FALSE) %>%
+  ungroup() %>%
+  mutate(comparison_type = "diet")
+
+# --- Treatment contrasts (pups only, HFHS diet) ---
+treatment_SCFA_wk5_dams <- SCFA_wk5_dams %>%
+  filter(age != "dam") %>%
+  pivot_longer(
+    cols = c(Acetate:Total),
+    names_to = "metabolite",
+    values_to = "value"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(
+    treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+    diet = factor(diet, levels = c("Control", "HFHS"))
+  ) %>%
+  filter(diet == "HFHS") %>%
+  group_by(sex, metabolite) %>%
+  pairwise_t_test(value ~ treatment, pool.sd = FALSE) %>%
+  ungroup() %>%
+  mutate(comparison_type = "treatment")
+
+# --- Combine diet + treatment contrasts ---
+combined_diet_treatment_SCFA_wk5_dams <- bind_rows(diet_SCFA_wk5_dams, treatment_SCFA_wk5_dams)
+
+# Optional: clean list columns if needed
+combined_diet_treatment_SCFA_wk5_dams_clean <- combined_diet_treatment_SCFA_wk5_dams %>%
+  mutate(across(where(is.list), ~ sapply(., toString)))
+
+# Save combined contrasts
+write.csv(
+  combined_diet_treatment_SCFA_wk5_dams_clean,
+  "output/combined_diet_treatment_SCFA_wk5_dams.csv",
+  row.names = FALSE
+)
+
+# --- Restoration calculation by sex AND metabolite ---
+diet_treatment_SCFA_wk5_dams_restoration <- combined_diet_treatment_SCFA_wk5_dams %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(sex, metabolite) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &
+        sign(statistic_diet) != sign(statistic_treatment_1472),
+      "restored", "not restored"
+    )
+  )
+
+# Save restoration results
+write.csv(
+  diet_treatment_SCFA_wk5_dams_restoration,
+  "output/diet_treatment_SCFA_wk5_restoration_0.05.csv",
+  row.names = FALSE
+)
+
+#Stats restoration Contrasts pairwise week 12------------
+
+
+diet_SCFA_wk12 <- SCFA_wk12 %>%
+  pivot_longer(
+    cols = c(Acetate:Total),
+    names_to = "metabolite",
+    values_to = "value"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(
+    treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+    diet = factor(diet, levels = c("Control", "HFHS"))
+  ) %>%
+  filter(treatment == "Vehicle") %>%
+  group_by(sex, metabolite) %>%
+  pairwise_t_test(value ~ diet, pool.sd = FALSE) %>%
+  ungroup() %>%
+  mutate(comparison_type = "diet")
+
+# --- Treatment contrasts (pups only, HFHS diet) ---
+treatment_SCFA_wk12 <- SCFA_wk12 %>%
+  pivot_longer(
+    cols = c(Acetate:Total),
+    names_to = "metabolite",
+    values_to = "value"
+  ) %>%
+  janitor::clean_names() %>%
+  mutate(
+    treatment = factor(treatment, levels = c("Vehicle", "FOS+GOS", "1472")),
+    diet = factor(diet, levels = c("Control", "HFHS"))
+  ) %>%
+  filter(diet == "HFHS") %>%
+  group_by(sex, metabolite) %>%
+  pairwise_t_test(value ~ treatment, pool.sd = FALSE) %>%
+  ungroup() %>%
+  mutate(comparison_type = "treatment")
+
+# --- Combine diet + treatment contrasts ---
+combined_diet_treatment_SCFA_wk12 <- bind_rows(diet_SCFA_wk12, treatment_SCFA_wk12)
+
+# Optional: clean list columns if needed
+combined_diet_treatment_SCFA_wk12_clean <- combined_diet_treatment_SCFA_wk12 %>%
+  mutate(across(where(is.list), ~ sapply(., toString)))
+
+# Save combined contrasts
+write.csv(
+  combined_diet_treatment_SCFA_wk12_clean,
+  "output/combined_diet_treatment_SCFA_wk12.csv",
+  row.names = FALSE
+)
+
+# --- Restoration calculation by sex AND metabolite ---
+diet_treatment_SCFA_wk12_restoration <- combined_diet_treatment_SCFA_wk12 %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(sex, metabolite) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &
+        sign(statistic_diet) != sign(statistic_treatment_1472),
+      "restored", "not restored"
+    )
+  )
+
+# Save restoration results
+write.csv(
+  diet_treatment_SCFA_wk12_restoration,
+  "output/diet_treatment_SCFA_wk12_restoration_0.05.csv",
+  row.names = FALSE
+)
+
