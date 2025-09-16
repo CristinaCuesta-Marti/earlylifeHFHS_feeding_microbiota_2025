@@ -1,0 +1,957 @@
+#Load packages---
+
+install.packages(c("dplyr", "tibble", "janitor", "purrr", "rstatix"))
+
+library(dplyr)      
+library(tibble)     
+library(janitor)    
+library(purrr)      
+library(rstatix)    
+
+#Contrasts - pairwise - used for omics-related data for restoration effect------------
+
+#Example 1 (no random effects inclued) 
+
+#Restoration-Microbiota 16S-Genus pups----------------
+
+diet_genus_relabund_pups <- genus_relativeabundance_pup %>% 
+  select(Genus, sex, Cohort, Diet,timepoint, Treatment, Sample, Abundance) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  
+  #pull(treatment) %>% unique()
+  #pull(diet) %>% unique()
+  
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(treatment == "Vehicle") %>% 
+  group_by(genus, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(diet_pwtt = purrr::map(.x = data, 
+                                .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                formula = abundance ~ diet,
+                                                                pool.sd = FALSE))) %>% 
+  unnest(c(diet_pwtt)) %>%
+  select(-data) %>% 
+  mutate(comparison_type = "diet")
+
+treatment_genus_relabund_pups <- genus_relativeabundance_pup %>% 
+  select(Genus, sex, Cohort, Diet,timepoint, Treatment, Sample, Abundance) %>% 
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                            levels = c("Vehicle", "FOS+GOS", "1472")),
+         diet = factor(x = diet,
+                       levels = c("Control", "HFHS")
+         )) %>%
+  filter(diet == "HFHS") %>% 
+  group_by(genus, sex, timepoint) %>% 
+  nest() %>% 
+  mutate(treatment_pwtt = purrr::map(.x = data, 
+                                     .f = ~ rstatix::pairwise_t_test(data = .x,
+                                                                     formula = abundance ~ treatment,
+                                                                     pool.sd = FALSE))) %>% 
+  unnest(treatment_pwtt) %>%
+  select(-data) %>% 
+  mutate(comparison_type = "treatment")
+
+combined_diet_treatment_genus_relabund_pups <- rbind(diet_genus_relabund_pups, treatment_genus_relabund_pups)
+write.csv(combined_diet_treatment_genus_relabund_pups, "outputs/combined_diet_treatment_genus_relabund_pups.csv", row.names = FALSE)
+
+
+diet_treatment_genus_relabund_pups_restoration <- combined_diet_treatment_genus_relabund_pups %>%
+  filter(
+    (comparison_type == "diet" & group1 == "Control" & group2 == "HFHS") |
+      (comparison_type == "treatment" & group1 == "Vehicle" & group2 %in% c("FOS+GOS", "1472"))
+  ) %>%
+  group_by(genus, sex, timepoint) %>%
+  summarise(
+    statistic_diet = first(statistic[comparison_type == "diet"], default = NA),
+    p.adj_diet = first(p.adj[comparison_type == "diet"], default = NA),
+    statistic_treatment_FOSGOS = first(statistic[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    p.adj_treatment_FOSGOS = first(p.adj[comparison_type == "treatment" & group2 == "FOS+GOS"], default = NA),
+    statistic_treatment_1472 = first(statistic[comparison_type == "treatment" & group2 == "1472"], default = NA),
+    p.adj_treatment_1472 = first(p.adj[comparison_type == "treatment" & group2 == "1472"], default = NA)
+  ) %>%
+  mutate(
+    restoration_FOSGOS = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+        p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+      "restored", "not restored"
+    ),
+    restoration_1472 = if_else(
+      !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+        p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+        sign(statistic_diet) != sign(statistic_treatment_1472),  
+      "restored", "not restored"
+    )
+  )
+write.csv(diet_treatment_genus_relabund_pups_restoration, "outputs/diet_treatment_genus_relabund_pups_restoration.csv", row.names = FALSE)
+
+
+#Example with random effects  (litter/cage and cohort)----------
+
+###Diet---
+## Part 2: tests if diet (control or HFHS) has an effect in vehicle treatment group (no APC1472 or FOS+GOS) per bif species, sex, and timepoint.
+diet_bif_species_relabund_pups <- bif_relative_pup %>%
+  select(Genus_species, cohort, dam_cage, sex, diet, timepoint, treatment, Sample, Abundance) %>%
+  as_tibble() %>%
+  janitor::clean_names() %>%
+  mutate(treatment = factor(x = treatment,
+                              levels = c("Vehicle", "FOS+GOS", "B. longum APC1472")),
+         diet = factor(x = diet,
+                         levels = c("Control", "HFHS")),
+         dam_cage = factor(dam_cage),
+        cohort = factor(cohort), 
+        sex = factor(sex, levels = c("Female", "Male")),
+        timepoint = factor(timepoint, levels = c("week 5", "week 10"))
+        ) %>%
+  filter(treatment == "Vehicle") %>%
+  group_by(genus_species, sex, timepoint) %>%
+  nest() %>%
+  mutate(diet_lmer = purrr::map(.x = data, .f = ~ {
+    if(var(.x$abundance) == 0) {
+      tibble(term = NA, estimate = NA, std.error = NA, statistic = NA, p.value = NA)
+    } else {
+      lmerTest::lmer(abundance ~ diet + (1|cohort) + (1|dam_cage), data = .x) %>%
+        broom.mixed::tidy()
+    }
+  })
+  ) %>%
+  select(-data) %>% 
+  unnest(diet_lmer) %>%
+  mutate(p.adj = p.adjust(p.value, method = "holm")) %>%
+  filter(term != "(Intercept)" & !is.na(estimate)) %>%
+  mutate(comparison_type = "diet")
+ 
+###Treatment
+## Part 3: tests if treatment (vehicle, APC1472, or FOS+GOS) has an effect on HFHS diet group, per bif species, for sex and timepoint.
+  treatment_bif_species_relabund_pups <- bif_relative_pup %>%
+    select(Genus_species, cohort, dam_cage, sex, diet, timepoint, treatment, Sample, Abundance) %>%
+    as_tibble() %>%
+    janitor::clean_names() %>%
+    mutate(treatment = factor(x = treatment,
+                              levels = c("Vehicle", "FOS+GOS", "B. longum APC1472")),
+           diet = factor(x = diet,
+                         levels = c("Control", "HFHS")),
+           dam_cage = factor(dam_cage),
+           cohort = factor(cohort), 
+           sex = factor(sex, levels = c("Female", "Male")),
+           timepoint = factor(timepoint, levels = c("week 5", "week 10"))
+    ) %>%
+    filter(diet == "HFHS") %>%
+    group_by(genus_species, sex, timepoint) %>%
+    nest() %>%
+    mutate(treatment_lmer = purrr::map(.x = data, .f = ~ {
+      if(var(.x$abundance) == 0) {
+        tibble(term = NA, estimate = NA, std.error = NA, statistic = NA, p.value = NA)
+      } else {
+        lmerTest::lmer(abundance ~ treatment + (1|cohort) + (1|dam_cage), data = .x) %>%
+          broom.mixed::tidy()
+      }
+    })
+    ) %>%
+    select(-data) %>%  
+    unnest(treatment_lmer) %>%
+    mutate(p.adj = p.adjust(p.value, method = "holm")) %>%
+    filter(term != "(Intercept)" & !is.na(estimate)) %>%
+    mutate(comparison_type = "treatment")
+ 
+ ## Part 4: combining results from part 2 and 3
+combined_diet_treatment_bif_species_relabund_pups <- bind_rows(diet_bif_species_relabund_pups, treatment_bif_species_relabund_pups)
+ 
+write.csv(combined_diet_treatment_bif_species_relabund_pups,
+            "combined_diet_treatment_bif_species_relabund_pups.csv",
+            row.names = FALSE) 
+
+ ###Restoration
+ ## Part 5: Checks whether treatment actually reversed the effects of HFHS i.e restore microbiome back to control
+  diet_treatment_bif_species_relabund_pups_restoration <- combined_diet_treatment_bif_species_relabund_pups %>%
+    filter(
+      (comparison_type == "diet" & term == "dietHFHS") | # Benjamin's script has group1/2, whereas because I did lmer to account for random variable, I have term instead of group1/2.
+        (comparison_type == "treatment" & term %in% c("treatmentFOS+GOS", "treatmentB. longum APC1472"))
+    ) %>%
+    group_by(genus_species, sex, timepoint) %>%
+    summarise(
+      statistic_diet = first(statistic[term == "dietHFHS"], default = NA),
+      p.adj_diet = first(p.adj[term == "dietHFHS"], default = NA), 
+      statistic_treatment_FOSGOS = first(statistic[term == "treatmentFOS+GOS"], default = NA),
+      p.adj_treatment_FOSGOS = first(p.adj[term == "treatmentFOS+GOS"], default = NA),
+      statistic_treatment_1472 = first(statistic[term == "treatmentB. longum APC1472"], default = NA),
+      p.adj_treatment_1472 = first(p.adj[term == "treatmentB. longum APC1472"], default = NA)
+    ) %>%
+    mutate(
+      restoration_FOSGOS = if_else(
+        !is.na(p.adj_diet) & !is.na(p.adj_treatment_FOSGOS) &  
+          p.adj_diet < 0.05 & p.adj_treatment_FOSGOS < 0.05 &  
+          sign(statistic_diet) != sign(statistic_treatment_FOSGOS),  
+        "restored", "not restored"
+      ),
+      restoration_1472 = if_else(
+        !is.na(p.adj_diet) & !is.na(p.adj_treatment_1472) &  
+          p.adj_diet < 0.05 & p.adj_treatment_1472 < 0.05 &  
+          sign(statistic_diet) != sign(statistic_treatment_1472),  
+        "restored", "not restored"
+      )
+    )
+  write.csv(diet_treatment_bif_species_relabund_pups_restoration, "diet_treatment_bif_species_relabund_pups_restoration.csv", row.names = FALSE)
+
+
+
+#Orthogonal contrasts with lm for restoration effect-Example for single timepoint measurements/results----------------
+
+Example ELISA wk 12--
+#lm - #FOS+GOS
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+
+lm_contrast_ELISA_FOSGOS_fresh_wk12pups = ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "1472") %>% 
+  mutate(ID = factor(ID)) %>% 
+  pivot_longer(cols = -c(ID, sex, diet, treatment, legend, cage, cohort),
+               names_to = "name") %>%
+  group_by(name, sex) %>% 
+  reframe(
+    lm(value ~ legend, 
+       contrasts = list(legend = mat_restored), 
+       data = across(everything()) 
+    ) %>% car::Anova(., type = 3) %>% tidy()
+    
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_contrast_ELISA_HYP_FOSGOS_fresh_wk12pups.csv") #(within outputs/overall_stats)
+
+
+#lm -Restoration by B. longum APC1472--
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lm_contrast_ELISA_HYP_1472_fresh_wk12pups = ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "FOS+GOS") %>% 
+  mutate(ID = factor(ID)) %>% 
+  pivot_longer(cols = -c(ID, sex, diet, treatment, legend, cage, cohort),
+               names_to = "name") %>%
+  group_by(name, sex) %>% 
+  reframe(
+    lm(value ~ legend, 
+       contrasts = list(legend = mat_restored), 
+       data = across(everything()) 
+    ) %>% car::Anova(., type = 3) %>% tidy()
+    
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_contrast_ELISA_HYP_1472_fresh_wk12pups.csv") #(within outputs/overall_stats)
+
+
+#Example of ANOVA + posthoc comparisons (Tukey) for single timepoint measurements-------
+
+#ANOVA FOSGOS-
+
+anova_FOSGOS_ELISA_HYP_fresh_wk12pups <- ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "1472") %>% 
+  pivot_longer(!c(ID, sex, cohort, cage, diet, treatment, legend)) %>% 
+  group_by(name, sex) %>% 
+  summarise(
+    anova_FOSGOS_ELISA_HYP_fresh_wk12pups = list(aov(value ~ legend, data = cur_data())),
+    .groups = 'drop'
+  ) %>% 
+  mutate(anova_FOSGOS_ELISA_HYP_fresh_wk12pups = map(anova_FOSGOS_ELISA_HYP_fresh_wk12pups, ~ tidy(.) %>% 
+                                         filter(term == "legend"))) %>%
+  unnest(anova_FOSGOS_ELISA_HYP_fresh_wk12pups) %>%
+  write.csv(., "outputs/anova_FOSGOS_ELISA_HYP_fresh_wk12pups.csv") #(within outputs/overall_stats)
+
+
+#Tukeys FOS+GOS-
+tukey_FOSGOS_ELISA_HYP_fresh_wk12pups = ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "1472") %>% 
+  group_by(name, sex) %>% 
+  reframe(    
+    lm(value ~ legend, 
+       data = across(everything()) 
+    ) %>% aov() %>% TukeyHSD() %>% tidy()
+    ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  write.csv(., "outputs/tukey_FOSGOS_ELISA_HYP_fresh_wk12pups.csv")
+
+#ANOVA B. longum APC1472
+
+anova_1472_ELISA_HYP_fresh_wk12pups <- ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "FOS+GOS") %>% 
+  pivot_longer(!c(ID, sex, cohort, cage, diet, treatment, legend)) %>% 
+  group_by(name, sex) %>% 
+  summarise(
+    anova_1472_ELISA_HYP_fresh_wk12pups = list(aov(value ~ legend, data = cur_data())),
+    .groups = 'drop'
+  ) %>% 
+  mutate(anova_1472_ELISA_HYP_fresh_wk12pups = map(anova_1472_ELISA_HYP_fresh_wk12pups, ~ tidy(.) %>% 
+                                                       filter(term == "legend"))) %>%
+  unnest(anova_1472_ELISA_HYP_fresh_wk12pups) %>%
+  write.csv(., "outputs/anova_1472_ELISA_HYP_fresh_wk12pups.csv") #(within outputs/overall_stats)
+
+#Tukeys B. longum APC1472
+tukey_1472_ELISA_HYP_fresh_wk12pups = ELISA_HYP_fresh_wk12pups %>% 
+  filter(treatment != "FOS+GOS") %>% 
+  group_by(name, sex) %>% 
+  reframe(
+    lm(value ~ legend, 
+    data = across(everything()) 
+    ) %>% aov() %>% TukeyHSD() %>% tidy()
+    ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  write.csv(., "outputs/tukey_ELISA_HYP_1472_fresh_wk12pups.csv") #(within overall_stats)
+
+
+#Example Orthogonal contrasts with lm for restoration effect for longitudinal data such as body weight and body weight gain--------------
+
+#BW gain with outliers stats-----------
+
+# lm orthogonal contrasts - restoartion by FOS+GOS - Restoration by name (Age * Legend * Sex)--
+
+mat_restored  = cbind(c(1/2,  -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle" ,"HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lm_summary_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "1472") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  filter(Age != "PND1") %>% 
+  #filter(name %in% c("BW.g.")) %>% 
+  group_by(name) %>% 
+  reframe(
+    
+    lm(value ~  Age * Legend * Sex, 
+         contrasts = list(Legend = mat_restored), 
+         data = across(everything()) 
+    ) %>% car::Anova(., type = 3) %>% tidy()
+    
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(name,term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_summary_FOSGOS_bwgain_wk12pups_age_sex_legend.csv") #(within outputs/overall_stats)
+
+# FOS+GOS Restoration per sex per timepoint--
+
+lm_contrasts_FOSGOS_bwgain_wk12pups_timepoint = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "1472") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #filter(name %in% c("BW.g.")) %>% 
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  reframe(
+    lm(value ~  Legend, 
+       contrasts = list(Legend = mat_restored), 
+       data = across(everything()) 
+    ) %>% anova %>% tidy()
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(name,term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_contrasts_FOSGOS_bwgain_wk12pups_timepoint.csv") #(within outputs/overall_stats)
+
+
+# lm orthogonal contrasts - restoartion by B. longum APC1472 - Restoration by name (Age * Legend * Sex)-- 
+
+mat_restored  = cbind(c(1/2,  -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle" ,"HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lm_summary_1472_bwgain_wk12pups_summ_fact_age_sex_legend = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "FOS+GOS") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS 1472"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  filter(Age != "PND1") %>% 
+  #filter(name %in% c("BW.g.")) %>% 
+  group_by(name) %>% 
+  reframe(
+    
+    lm(value ~  Age * Legend * Sex, 
+         contrasts = list(Legend = mat_restored), 
+         data = across(everything()) 
+    ) %>% car::Anova(., type = 3) %>% tidy()
+    
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(name,term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_summary_1472_bwgain_wk12pups_age_sex_legend.csv") #(within outputs/overall_stats)
+
+# lm B. longum APC1472  Restoration per sex per timepoint--
+
+lm_contrasts_1472_bwgain_wk12pups_timepoint = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "FOS+GOS") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS 1472"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #filter(name %in% c("BW.g.")) %>% 
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  reframe(
+    lm(value ~  Legend, 
+       contrasts = list(Legend = mat_restored), 
+       data = across(everything()) 
+    ) %>% anova %>% tidy()
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  group_by(name,term) %>% 
+  mutate(p.adjusted = p.adjust(p = p.value, "BH") ) %>% 
+  ungroup %>% 
+  write.csv(., "outputs/lm_contrasts_1472_bwgain_wk12pups_timepoint.csv") #(within outputs/overall_stats)
+
+#ANOVA + Tukey stats - BW GAIN WK12 PUPS - per sex per timepoint -----
+
+#FOS+GOS
+anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend <- dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "1472") %>% 
+  #filter(Age != "PND1") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS"))) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  summarise(
+    anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend = list(aov(value ~ Legend, data = cur_data())),
+    .groups = 'drop'
+  ) %>% 
+  # Extract ANOVA summary for Legend
+  mutate(anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend = map(anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend, ~ tidy(.) %>% 
+                                                     filter(term == "Legend"))) %>%
+  unnest(anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend) %>%
+  write.csv(., "outputs/anova_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend.csv")#(within outputs/overall_stats)
+
+#Tukeys FOS+GOS--
+
+tukey_FOSGOS_bwgain_wk12pups_summ_fact_age_sex_legend = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "1472") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS FOS+GOS"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  reframe(
+  lm(value ~  Legend, 
+       data = across(everything()) 
+    ) %>% aov %>% TukeyHSD %>% tidy()
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  write.csv(., "outputs/tukey_FOSGOS_bwgain_wk12pups_pertimepoint.csv")  #(within outputs/overall_stats)
+
+
+#ANOVA + Tukey stats - BW GAIN WK12 PUPS - by sex and Age (timepoint) -- 
+#B. longum APC 1472
+anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend <- dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "FOS+GOS") %>% 
+  #filter(Age != "PND1") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS 1472"))) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  summarise(
+    anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend = list(aov(value ~ Legend, data = cur_data())),
+    .groups = 'drop'
+  ) %>% 
+  # Extract ANOVA summary for Legend
+  mutate(anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend = map(anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend, ~ tidy(.) %>% 
+                                                                       filter(term == "Legend"))) %>%
+  unnest(anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend) %>%
+  write.csv(., "outputs/anova_1472_bwgain_wk12pups_summ_fact_age_sex_legend.csv") #(within outputs/overall_stats)
+
+#Tukeys B. longum APC 1472--
+tukey_1472_bwgain_wk12pups_summ_fact_age_sex_legend = dat %>% 
+  mutate(Age = factor(Age, levels = unique(Age)))  %>% 
+  filter(Treatment != "FOS+GOS") %>% 
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "), 
+                         levels = c("Control Vehicle" ,
+                                    "HFHS Vehicle"  ,
+                                    "HFHS 1472"))) %>% 
+  mutate(Cage.Litter = factor(Cage.Litter)) %>% 
+  pivot_longer(!c(FPT_PreferenceScore._OD, Name, Cage.Litter, Sex,
+                  Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain"))) %>%
+  #mutate(value_1 = case_when(is.na(value) ~ 0, .default = value)) %>% 
+  group_by(name, Age, Sex) %>% 
+  reframe(
+    lm(value ~  Legend, 
+       data = across(everything()) 
+    ) %>% aov %>% TukeyHSD %>% tidy()
+  ) %>% 
+  ungroup() %>%
+  filter(term != "(Intercept)") %>% 
+  write.csv(., "outputs/tukey_1472_bwgain_wk12pups_pertimepoint.csv") #(within outputs/overall_stats)
+
+
+
+#Orthogonal contrasts- considering random effects (cafe/litter and cohort)-Restoration by microbiota-targeted interventions------------
+
+#Striatum lmer for reviewers-------
+
+#lmer restoration by FOS+GOS- by name (legend * sex + (1|cage) + (1|cohort))--
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lmer_summary_stats_FOSGOS_striatum_fresh_wk12pups = striatum_fresh_wk12pups %>% 
+  mutate(sex = factor(sex)) %>%
+  mutate(ID = factor(ID)) %>%
+  pivot_longer(!c(ID, sex, diet, treatment, legend, cage, cohort)) %>%
+  group_by(name) %>% 
+  filter(treatment != "1472") %>% 
+  reframe({
+    model <- lmer(value ~  legend * sex + (1|cage) + (1|cohort),
+                  contrasts = list(legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_sex_legend_cofactorcagecohort_stats_FOSGOS_striatum_wk12_Rand_eff_byname.csv") #(within outputs/overall_stats_lmer)
+
+#lmer restoration by FOS+GOS - by sex and name (legend + (1|cage) + (1|cohort))--
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lmer_summary_stats_FOSGOS_striatum_fresh_wk12pups = striatum_fresh_wk12pups %>% 
+  mutate(sex = factor(sex)) %>%
+  mutate(ID = factor(ID)) %>%
+  pivot_longer(!c(ID, sex, diet, treatment, legend, cage, cohort)) %>%
+  group_by(name, sex) %>% 
+  filter(treatment != "1472") %>% 
+  reframe({
+    model <- lmer(value ~  legend + (1|cage) + (1|cohort),
+                  contrasts = list(legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_sex_legend_cofactorcagecohort_stats_FOSGOS_striatum_wk12_Rand_eff_byname_andsex.csv") #(within outputs/overall_stats_lmer)
+
+
+#lmer restoration by B. longum APC1472 - by name (legend * sex+ (1|cage) + (1|cohort))--
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lmer_summary_stats_1472_striatum_fresh_wk12pups = striatum_fresh_wk12pups %>% 
+  mutate(sex = factor(sex)) %>%
+  mutate(ID = factor(ID)) %>%
+  pivot_longer(!c(ID, sex, diet, treatment, legend, cage, cohort)) %>%
+  group_by(name) %>% 
+  filter(treatment != "FOS+GOS") %>% 
+  reframe({
+    model <- lmer(value ~  legend * sex + (1|cage) + (1|cohort),
+                  contrasts = list(legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #  select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_sex_legend_cofactorcagecohort_stats_summary_striatum_1472_wk12_rand_eff_byname.csv", row.names = FALSE) #(within outputs/overall_stats_lmer)
+
+#lmer restoration by B. longum APC1472 - by name and sex(legend + (1|cage) + (1|cohort))--
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lmer_summary_stats_1472_striatum_fresh_wk12pups_randomeff = striatum_fresh_wk12pups %>% 
+  mutate(sex = factor(sex)) %>%
+  mutate(ID = factor(ID)) %>%
+  pivot_longer(!c(ID, sex, diet, treatment, legend, cage, cohort)) %>%
+  group_by(name, sex) %>% 
+  filter(treatment != "FOS+GOS") %>% 
+  reframe({
+    model <- lmer(value ~  legend + (1|cage) + (1|cohort),
+                  contrasts = list(legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #  select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_sex_legend_cofactorcagecohort_stats_striatum_1472_wk12_rand_eff_by_sex_name_andsex.csv", row.names = FALSE) #(within outputs/overall_stats_lmer)
+
+
+#Example lmer for random effects (cage/litter and cohort) for orthogonal contrasts to assess restorration effects of microbiota-targeted interventions of longitudinal data--------
+#Body weight and gody weight gain lmer---
+
+#lmer FOS+GOS BY NAME (Age * Legend * Sex + (1|Cage.Litter) + (1|Cohort))---
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lmer_FOSGOS_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "1472") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>% 
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name) %>% 
+  reframe({
+    model <- lmer(value ~  Age * Legend * Sex + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_FOSGOS_bw_AND_bwgain_wk12_rand_eff_byname.csv") #(within outputs/overall_stats_lmer)
+
+
+#lmer FOS+GOS BY name and sex (Age * Legend + (1|Cage.Litter) + (1|Cohort))---
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lmer_FOSGOS_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "1472") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>% 
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name, Sex) %>% 
+  reframe({
+    model <- lmer(value ~  Age * Legend + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_FOSGOS_bw_AND_bwgain_wk12_rand_eff_byname_ANDSEX.csv") #(within outputs/overall_stats_lmer)
+
+#lmer FOS+GOS BY name, sex and Age (Legend + (1|Cage.Litter) + (1|Cohort))---
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS FOS+GOS")
+colnames(mat_restored) <- c("Restored")
+
+lmer_FOSGOS_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "1472") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS FOS+GOS"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>%
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name, Age, Sex) %>% 
+  reframe({
+    model <- lmer(value ~  Legend + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_FOSGOS_bw_AND_bwgain_wk12_rand_eff_byname_AGE_AND_SEX.csv") #(within outputs/overall_stats_lmer)
+
+
+#lmer B. longum APC1472 BY NAME (Age * Legend * Sex + (1|Cage.Litter) + (1|Cohort))---
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lmer_1472_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "FOS+GOS") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS 1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>% 
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name) %>% 
+  reframe({
+    model <- lmer(value ~  Age * Legend * Sex + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_1472_bw_AND_bwgain_wk12_rand_eff_byname.csv") #(within outputs/overall_stats_lmer)
+
+
+#lmer B. longum APC1472 BY name and Sex (Age * Legend + (1|Cage.Litter) + (1|Cohort))---
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lmer_1472_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "FOS+GOS") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS 1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>%
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name, Sex) %>% 
+  reframe({
+    model <- lmer(value ~  Age * Legend + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_1472_bw_AND_bwgain_wk12_rand_eff_byname_ANDSEX.csv") #(within outputs/overall_stats_lmer)
+
+
+#lmer B. longum APC1472 BY name, sex and Age (Legend + (1|Cage.Litter) + (1|Cohort))---
+
+mat_restored  = cbind(c(1/2, -1, 1/2))
+rownames(mat_restored) <-  c("Control Vehicle","HFHS Vehicle","HFHS 1472")
+colnames(mat_restored) <- c("Restored")
+
+lmer_1472_bw_AND_bwgain_wk12 = dat %>%
+  filter(Treatment != "FOS+GOS") %>%
+  mutate(Legend = factor(paste(Diet, Treatment, sep = " "),
+                         levels = c("Control Vehicle",
+                                    "HFHS Vehicle",
+                                    "HFHS 1472"))) %>%
+  mutate(Mouse_ID = factor(Mouse_ID)) %>%
+  mutate(Age = factor(Age)) %>%
+  mutate(BW.g. = as.numeric(BW.g.)) %>%
+  pivot_longer(!c(Name, Cage.Litter, Mouse_ID, Sex, Cohort, Diet, Treatment, Age, Legend)) %>% 
+  filter((name  %in% c("bw_gain", "BW.g."))) %>%
+  filter(!(name == "bw_gain" & Age == "PND1")) %>%  
+  group_by(name, Age, Sex) %>% 
+  reframe({
+    model <- lmer(value ~  Legend + (1|Cage.Litter) + (1|Cohort),
+                  contrasts = list(Legend = mat_restored), 
+                  data = across(everything()))
+    
+    fixed_effects <- car::Anova(model, type = 3) %>% tidy()
+    random_effects <- broom.mixed::tidy(model, effects = "ran_pars")
+    
+    bind_rows(
+      fixed_effects %>% mutate(effect_type = "fixed"),
+      random_effects %>% mutate(effect_type = "random")
+    )
+  }) %>%
+  ungroup() %>%
+  filter(term != "(Intercept)" | effect_type == "random") %>%
+  group_by(term) %>%
+  mutate(p.adjusted = ifelse(effect_type == "fixed",
+                             p.adjust(p.value, "BH"),
+                             NA)) %>%
+  ungroup() %>%
+  #select(name, effect_type, term, estimate, std.error, statistic, p.value, p.adjusted) %>% 
+  write.csv(., "outputs/lmer_cohort_cage_1472_bw_AND_bwgain_wk12_rand_eff_byname_AGE_AND_SEX.csv") #(within outputs/overall_stats_lmer)
+
