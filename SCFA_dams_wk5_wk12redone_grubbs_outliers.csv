@@ -1,0 +1,141 @@
+"","timepoint","age","sex","legend","name","n","G","U","grubbs","p_grubbs"
+"1","w5","pup","F","HFHS FOS+GOS","IsoValerate",10,2.75,0.0633,"highest value 1.54296875 is an outlier",2.26e-05
+"2","w5","pup","F","HFHS FOS+GOS","Butyrate",10,2.6,0.162,"highest value 10.66968131 is an outlier",0.00102
+"3","dam","dam","F","HFHS Vehicle","Butyrate",7,2.19,0.064,"highest value 6.502849003 is an outlier",0.00126
+"4","w12","pup","M","HFHS FOS+GOS","IsoValerate",6,1.98,0.0591,"highest value 0.947 is an outlier",0.00401
+"5","w5","pup","F","HFHS Vehicle","Valerate",8,2.25,0.176,"highest value 4.744444444 is an outlier",0.00726
+"6","w5","pup","M","HFHS FOS+GOS","Propionate",13,2.64,0.37,"highest value 5.663452709 is an outlier",0.00774
+"7","w5","pup","F","Control Vehicle","Butyrate",6,1.93,0.105,"highest value 8.550135501 is an outlier",0.013
+"8","w5","pup","F","HFHS FOS+GOS","Propionate",10,2.35,0.316,"highest value 8.092592593 is an outlier",0.0157
+"9","dam","dam","F","HFHS FOS+GOS","Total",7,2.06,0.179,"highest value 104.7512438 is an outlier",0.0172
+"10","w5","pup","F","Control Vehicle","Valerate",6,1.9,0.137,"highest value 5.975609756 is an outlier",0.0223
+"11","dam","dam","F","HFHS Vehicle","Valerate",7,2.02,0.207,"highest value 3.333333333 is an outlier",0.0251
+"12","dam","dam","F","HFHS FOS+GOS","Acetate",7,2.02,0.208,"highest value 84.95024876 is an outlier",0.0256
+"13","dam","dam","F","HFHS FOS+GOS","Propionate",7,2.01,0.212,"highest value 11.82006633 is an outlier",0.0268
+"14","w12","pup","M","HFHS FOS+GOS","IsoButyrate",6,1.87,0.16,"highest value 0.856 is an outlier",0.0304
+"15","w12","pup","M","HFHS Vehicle","Propionate",6,1.87,0.165,"highest value 5.404 is an outlier",0.0325
+"16","w5","pup","M","Control Vehicle","Valerate",11,2.29,0.423,"highest value 4.943310658 is an outlier",0.0367
+"17","w5","pup","F","Control Vehicle","Propionate",6,1.85,0.179,"highest value 8.902439024 is an outlier",0.0384
+"18","w12","pup","M","HFHS FOS+GOS","Propionate",6,1.84,0.191,"highest value 11.807 is an outlier",0.0441
+"19","dam","dam","F","HFHS FOS+GOS","Valerate",7,1.95,0.258,"highest value 1.940298507 is an outlier",0.0445
+"20","w5","pup","F","HFHS Vehicle","IsoValerate",8,2.04,0.321,"highest value 0.988888889 is an outlier",0.0475
+"21","w12","pup","M","HFHS FOS+GOS","Valerate",6,1.83,0.2,"lowest value 0.974 is an outlier",0.0486
+"22","w12","pup","F","HFHS Vehicle","IsoButyrate",6,1.8,0.219,"highest value 0.597 is an outlier",0.0586
+"23","w12","pup","F","Control Vehicle","Butyrate",6,1.8,0.221,"lowest value 1.966 is an outlier",0.0593
+"24","w5","pup","M","HFHS Vehicle","IsoValerate",14,2.32,0.552,"highest value 0.762527233 is an outlier",0.062
+"25","w5","pup","F","HFHS B. longum APC1472","IsoValerate",9,2.06,0.405,"lowest value 0.694444444 is an outlier",0.0674
+"26","w12","pup","F","HFHS Vehicle","Propionate",6,1.76,0.255,"highest value 4.154 is an outlier",0.0807
+"27","w12","pup","F","Control Vehicle","Valerate",6,1.76,0.256,"lowest value 1.054 is an outlier",0.0813
+"28","w12","pup","M","HFHS Vehicle","Butyrate",6,1.76,0.257,"highest value 5.381 is an outlier",0.0816
+"29","w12","pup","M","HFHS Vehicle","IsoValerate",6,1.76,0.258,"highest value 0.807 is an outlier",0.0823
+"30","w5","pup","M","Control Vehicle","IsoValerate",11,2.13,0.503,"highest value 1.145124717 is an outlier",0.0843
+"31","dam","dam","F","HFHS FOS+GOS","IsoButyrate",7,1.86,0.33,"lowest value 0.191477886 is an outlier",0.085
+"32","w5","pup","M","HFHS FOS+GOS","Butyrate",13,2.21,0.558,"highest value 4.85106383 is an outlier",0.0854
+"33","w12","pup","F","HFHS B. longum APC1472","Valerate",7,1.86,0.33,"lowest value 1.054 is an outlier",0.0855
+"34","w5","pup","M","HFHS FOS+GOS","Total",13,2.2,0.562,"highest value 40.4912764 is an outlier",0.0897
+"35","dam","dam","F","HFHS Vehicle","Total",7,1.84,0.34,"highest value 44.92165242 is an outlier",0.0921
+"36","w12","pup","M","Control Vehicle","Valerate",6,1.74,0.273,"lowest value 0.856 is an outlier",0.0928
+"37","w12","pup","M","Control Vehicle","Acetate",6,1.73,0.28,"highest value 27.343 is an outlier",0.0978
+"38","w5","pup","F","HFHS FOS+GOS","Acetate",10,2.03,0.49,"highest value 48.59157986 is an outlier",0.102
+"39","w12","pup","M","HFHS Vehicle","Valerate",6,1.72,0.286,"highest value 2.03 is an outlier",0.102
+"40","w12","pup","M","HFHS FOS+GOS","Total",6,1.72,0.29,"highest value 86.233 is an outlier",0.105
+"41","w12","pup","M","HFHS Vehicle","Total",6,1.7,0.303,"highest value 43.855 is an outlier",0.116
+"42","w12","pup","M","HFHS FOS+GOS","Acetate",6,1.7,0.303,"highest value 63.25 is an outlier",0.116
+"43","w5","pup","M","HFHS Vehicle","IsoButyrate",14,2.17,0.609,"highest value 0.713507625 is an outlier",0.117
+"44","w5","pup","M","HFHS B. longum APC1472","Propionate",7,1.8,0.372,"highest value 5.606523955 is an outlier",0.117
+"45","w12","pup","M","HFHS B. longum APC1472","Valerate",6,1.7,0.307,"lowest value 1.062 is an outlier",0.119
+"46","dam","dam","F","HFHS Vehicle","IsoValerate",7,1.79,0.375,"highest value 1.085470085 is an outlier",0.12
+"47","w12","pup","M","HFHS B. longum APC1472","Butyrate",6,1.7,0.31,"lowest value 1.485 is an outlier",0.122
+"48","w5","pup","F","Control Vehicle","Total",6,1.69,0.313,"highest value 55.74525745 is an outlier",0.124
+"49","w5","pup","M","HFHS B. longum APC1472","Valerate",7,1.79,0.38,"highest value 2.370030581 is an outlier",0.125
+"50","w12","pup","F","Control Vehicle","Propionate",6,1.68,0.325,"lowest value 2.884 is an outlier",0.135
+"51","w5","pup","M","HFHS Vehicle","Acetate",14,2.13,0.624,"lowest value 10.2977978 is an outlier",0.138
+"52","w5","pup","F","HFHS B. longum APC1472","IsoButyrate",9,1.9,0.493,"lowest value 0.637860082 is an outlier",0.142
+"53","dam","dam","F","Control Vehicle","Valerate",7,1.75,0.403,"highest value 2.632850242 is an outlier",0.146
+"54","w5","pup","M","HFHS Vehicle","Propionate",14,2.11,0.63,"highest value 6.405228758 is an outlier",0.146
+"55","dam","dam","F","Control Vehicle","Total",7,1.75,0.406,"highest value 44.93872549 is an outlier",0.149
+"56","w12","pup","M","HFHS B. longum APC1472","Total",6,1.65,0.344,"lowest value 13.884 is an outlier",0.152
+"57","w5","pup","M","HFHS Vehicle","Butyrate",14,2.09,0.637,"highest value 5.170517052 is an outlier",0.158
+"58","w12","pup","M","Control Vehicle","Butyrate",6,1.63,0.362,"highest value 4.239 is an outlier",0.17
+"59","dam","dam","F","Control Vehicle","IsoButyrate",7,1.72,0.428,"highest value 0.784313725 is an outlier",0.171
+"60","w12","pup","F","HFHS Vehicle","Valerate",6,1.63,0.363,"lowest value 1.231 is an outlier",0.171
+"61","w5","pup","F","Control Vehicle","IsoButyrate",6,1.63,0.364,"highest value 1.029810298 is an outlier",0.172
+"62","w5","pup","M","HFHS Vehicle","Total",14,2.06,0.647,"highest value 35.95315904 is an outlier",0.175
+"63","dam","dam","F","HFHS B. longum APC1472","Propionate",7,1.71,0.433,"highest value 8.238993711 is an outlier",0.178
+"64","dam","dam","F","HFHS FOS+GOS","Butyrate",7,1.7,0.435,"highest value 6.128550075 is an outlier",0.18
+"65","w5","pup","F","HFHS B. longum APC1472","Acetate",9,1.82,0.532,"lowest value 18.08531746 is an outlier",0.19
+"66","w5","pup","F","HFHS Vehicle","IsoButyrate",8,1.76,0.494,"highest value 0.811111111 is an outlier",0.191
+"67","w12","pup","M","HFHS FOS+GOS","Butyrate",6,1.6,0.383,"highest value 7.308 is an outlier",0.193
+"68","w12","pup","M","HFHS B. longum APC1472","Acetate",6,1.6,0.387,"lowest value 7.91 is an outlier",0.196
+"69","w12","pup","M","Control Vehicle","Total",6,1.6,0.387,"highest value 39.467 is an outlier",0.197
+"70","dam","dam","F","Control Vehicle","Acetate",7,1.68,0.45,"highest value 29.46078431 is an outlier",0.198
+"71","w5","pup","F","HFHS FOS+GOS","IsoButyrate",10,1.87,0.57,"lowest value 0.193142361 is an outlier",0.198
+"72","w12","pup","F","HFHS Vehicle","Butyrate",6,1.59,0.396,"highest value 4.358 is an outlier",0.207
+"73","w12","pup","M","HFHS B. longum APC1472","IsoValerate",6,1.58,0.399,"lowest value 0.348 is an outlier",0.211
+"74","dam","dam","F","HFHS Vehicle","Acetate",7,1.66,0.463,"highest value 26.18945869 is an outlier",0.213
+"75","w5","pup","M","HFHS FOS+GOS","Acetate",13,1.96,0.652,"highest value 28.45730028 is an outlier",0.22
+"76","dam","dam","F","HFHS B. longum APC1472","Valerate",7,1.65,0.469,"highest value 2.520964361 is an outlier",0.221
+"77","dam","dam","F","Control Vehicle","IsoValerate",7,1.65,0.469,"highest value 0.800653595 is an outlier",0.222
+"78","w5","pup","M","HFHS B. longum APC1472","IsoButyrate",7,1.64,0.474,"highest value 0.606523955 is an outlier",0.228
+"79","w12","pup","M","HFHS Vehicle","Acetate",6,1.56,0.418,"highest value 28.152 is an outlier",0.232
+"80","w5","pup","M","Control Vehicle","Acetate",11,1.86,0.618,"highest value 36.50715072 is an outlier",0.234
+"81","w12","pup","M","HFHS B. longum APC1472","IsoButyrate",6,1.55,0.421,"highest value 0.569 is an outlier",0.236
+"82","w5","pup","M","Control Vehicle","Propionate",11,1.86,0.62,"highest value 7.936507937 is an outlier",0.239
+"83","w5","pup","M","HFHS FOS+GOS","Valerate",13,1.93,0.662,"highest value 2.04007286 is an outlier",0.242
+"84","w5","pup","M","Control Vehicle","IsoButyrate",11,1.84,0.627,"highest value 0.918367347 is an outlier",0.253
+"85","w5","pup","F","HFHS Vehicle","Propionate",8,1.68,0.537,"highest value 6.677777778 is an outlier",0.253
+"86","dam","dam","F","HFHS FOS+GOS","IsoValerate",7,1.62,0.492,"lowest value 0.329018339 is an outlier",0.254
+"87","w5","pup","M","HFHS B. longum APC1472","Acetate",7,1.61,0.495,"lowest value 15.54341226 is an outlier",0.258
+"88","w5","pup","M","HFHS FOS+GOS","IsoValerate",13,1.91,0.67,"lowest value 0.366621682 is an outlier",0.261
+"89","w5","pup","F","HFHS B. longum APC1472","Butyrate",9,1.73,0.578,"lowest value 3.991769547 is an outlier",0.263
+"90","dam","dam","F","Control Vehicle","Butyrate",7,1.6,0.5,"lowest value 1.093903638 is an outlier",0.264
+"91","w5","pup","M","Control Vehicle","Butyrate",11,1.81,0.639,"highest value 6.201814059 is an outlier",0.277
+"92","w5","pup","M","HFHS Vehicle","Valerate",14,1.92,0.695,"highest value 2.607260726 is an outlier",0.284
+"93","w12","pup","M","HFHS B. longum APC1472","Propionate",6,1.5,0.458,"highest value 4.467 is an outlier",0.285
+"94","dam","dam","F","HFHS B. longum APC1472","Acetate",7,1.57,0.52,"highest value 25.1335056 is an outlier",0.296
+"95","w12","pup","F","HFHS Vehicle","IsoValerate",6,1.47,0.482,"highest value 0.616 is an outlier",0.32
+"96","w5","pup","F","Control Vehicle","IsoValerate",6,1.45,0.497,"highest value 1.192411924 is an outlier",0.343
+"97","w5","pup","F","HFHS FOS+GOS","Valerate",10,1.69,0.646,"highest value 1.82427108 is an outlier",0.347
+"98","w5","pup","M","HFHS B. longum APC1472","Total",7,1.52,0.55,"lowest value 25.51305404 is an outlier",0.347
+"99","w12","pup","F","Control Vehicle","IsoButyrate",6,1.44,0.502,"highest value 0.542 is an outlier",0.352
+"100","w5","pup","F","Control Vehicle","Acetate",6,1.43,0.508,"highest value 30.09485095 is an outlier",0.361
+"101","w5","pup","F","HFHS B. longum APC1472","Total",9,1.59,0.643,"lowest value 34.5627572 is an outlier",0.402
+"102","w12","pup","F","Control Vehicle","Acetate",6,1.38,0.543,"highest value 23.354 is an outlier",0.421
+"103","dam","dam","F","Control Vehicle","Propionate",7,1.45,0.589,"highest value 6.552287582 is an outlier",0.422
+"104","w5","pup","F","HFHS FOS+GOS","Total",10,1.62,0.675,"highest value 60.22786458 is an outlier",0.427
+"105","dam","dam","F","HFHS B. longum APC1472","IsoButyrate",7,1.45,0.593,"highest value 0.854297694 is an outlier",0.43
+"106","w12","pup","F","Control Vehicle","Total",6,1.35,0.564,"highest value 33.714 is an outlier",0.461
+"107","w5","pup","F","HFHS Vehicle","Butyrate",8,1.48,0.641,"highest value 5.622222222 is an outlier",0.465
+"108","w12","pup","F","HFHS Vehicle","Total",6,1.34,0.569,"lowest value 17.263 is an outlier",0.471
+"109","w12","pup","M","Control Vehicle","Propionate",6,1.34,0.572,"lowest value 2.429 is an outlier",0.475
+"110","w12","pup","F","HFHS B. longum APC1472","IsoButyrate",7,1.41,0.614,"highest value 0.464 is an outlier",0.476
+"111","w5","pup","M","HFHS B. longum APC1472","IsoValerate",7,1.4,0.617,"lowest value 0.46031746 is an outlier",0.485
+"112","w12","pup","F","HFHS B. longum APC1472","IsoValerate",7,1.38,0.631,"lowest value 0.435 is an outlier",0.517
+"113","dam","dam","F","HFHS B. longum APC1472","IsoValerate",7,1.38,0.632,"highest value 0.791404612 is an outlier",0.52
+"114","w5","pup","M","HFHS B. longum APC1472","Butyrate",7,1.38,0.632,"lowest value 2.931972789 is an outlier",0.52
+"115","w12","pup","F","HFHS Vehicle","Acetate",6,1.29,0.598,"lowest value 9.014 is an outlier",0.529
+"116","w5","pup","M","HFHS FOS+GOS","IsoButyrate",13,1.67,0.75,"highest value 0.483405483 is an outlier",0.53
+"117","dam","dam","F","HFHS Vehicle","IsoButyrate",7,1.37,0.637,"highest value 0.901709402 is an outlier",0.534
+"118","w12","pup","F","HFHS B. longum APC1472","Acetate",7,1.36,0.639,"highest value 20.003 is an outlier",0.539
+"119","w12","pup","F","HFHS B. longum APC1472","Total",7,1.36,0.64,"lowest value 19.448 is an outlier",0.539
+"120","w12","pup","F","HFHS B. longum APC1472","Butyrate",7,1.36,0.64,"highest value 3.179 is an outlier",0.54
+"121","w12","pup","M","HFHS Vehicle","IsoButyrate",6,1.28,0.608,"highest value 0.637 is an outlier",0.55
+"122","dam","dam","F","HFHS B. longum APC1472","Total",7,1.35,0.646,"highest value 39.06546081 is an outlier",0.554
+"123","w5","pup","F","HFHS Vehicle","Total",8,1.4,0.681,"highest value 53.31111111 is an outlier",0.579
+"124","w12","pup","M","Control Vehicle","IsoButyrate",6,1.25,0.624,"lowest value 0.329 is an outlier",0.587
+"125","w12","pup","F","HFHS B. longum APC1472","Propionate",7,1.32,0.66,"highest value 3.752 is an outlier",0.593
+"126","w5","pup","M","Control Vehicle","Total",11,1.54,0.74,"highest value 52.39823982 is an outlier",0.602
+"127","w5","pup","F","HFHS B. longum APC1472","Propionate",9,1.44,0.71,"highest value 8.374485597 is an outlier",0.606
+"128","w5","pup","F","HFHS B. longum APC1472","Valerate",9,1.43,0.711,"highest value 4.465020576 is an outlier",0.609
+"129","dam","dam","F","HFHS Vehicle","Propionate",7,1.31,0.667,"highest value 7.072649573 is an outlier",0.612
+"130","dam","dam","F","HFHS B. longum APC1472","Butyrate",7,1.25,0.695,"highest value 3.909853249 is an outlier",0.697
+"131","w5","pup","F","HFHS Vehicle","Acetate",8,1.29,0.729,"lowest value 17.67944936 is an outlier",0.742
+"132","w12","pup","F","Control Vehicle","IsoValerate",6,1.14,0.687,"lowest value 0.455 is an outlier",0.745
+"133","w12","pup","M","Control Vehicle","IsoValerate",6,1.13,0.692,"highest value 0.682 is an outlier",0.758
+"134","w12","pup","F","HFHS FOS+GOS","Acetate",2,NA,NA,NA,NA
+"135","w12","pup","F","HFHS FOS+GOS","Propionate",2,NA,NA,NA,NA
+"136","w12","pup","F","HFHS FOS+GOS","IsoButyrate",2,NA,NA,NA,NA
+"137","w12","pup","F","HFHS FOS+GOS","Butyrate",2,NA,NA,NA,NA
+"138","w12","pup","F","HFHS FOS+GOS","IsoValerate",2,NA,NA,NA,NA
+"139","w12","pup","F","HFHS FOS+GOS","Valerate",2,NA,NA,NA,NA
+"140","w12","pup","F","HFHS FOS+GOS","Total",2,NA,NA,NA,NA
