@@ -222,8 +222,8 @@ library(tidyr)
 library(grid)
 library(gridExtra)
 
-# Function to prepare heatmap data from the long format data for SCFA modules
-prepare_scfa_heatmap_data_from_long <- function(long_data, stats_df) {
+# Function to prepare heatmap data from the long format data for all modules
+prepare_heatmap_data_from_long <- function(long_data, stats_df) {
   
   # Create mean values by treatment group, sex, timepoint, and module
   # Using the legend column which already contains treatment group information
@@ -280,22 +280,24 @@ prepare_scfa_heatmap_data_from_long <- function(long_data, stats_df) {
       # Add color coding for stars
       star_color = case_when(
         grepl("HFHS.*Vehicle", treatment_group) ~ "black",
-        grepl("FOS.*GOS", treatment_group) ~ "#006400",  # Dark green (PowerPoint standard)
+        grepl("FOS.*GOS", treatment_group) ~ "#006400",  # Dark green
         grepl("1472|longum", treatment_group) ~ "orange",
         TRUE ~ "black"
-      )
+      ),
+      # Replace NA stars with empty string
+      stars = ifelse(is.na(stars), "", stars)
     )
   
   return(heatmap_data)
 }
 
-# Apply the function to your data
-plot_data <- prepare_scfa_heatmap_data_from_long(clr_gbms_unstrs_pups_long_scfa, 
-                                                 combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration_scfa)
+# Apply the function to your data - ALL modules included
+plot_data <- prepare_heatmap_data_from_long(clr_gbms_unstrs_pups_long, 
+                                            combined_diet_treatment_clr_gbms_unstrs_pups_long_restoration)
 
 # Debug: Check what treatment groups are actually in the data
 cat("Unique treatment groups in legend column:\n")
-print(unique(clr_gbms_unstrs_pups_long_scfa$legend))
+print(unique(clr_gbms_unstrs_pups_long$legend))
 cat("\nUnique treatment groups in plot_data:\n")
 print(unique(plot_data$treatment_group))
 
@@ -312,37 +314,36 @@ remaining_groups <- unique_treatments[!unique_treatments %in% desired_order & !i
 final_order <- c(actual_order, remaining_groups)
 
 plot_data$treatment_group <- factor(plot_data$treatment_group, levels = final_order)
-
 plot_data$sex <- factor(plot_data$sex, levels = c("F", "M"))
 plot_data$timepoint <- factor(plot_data$timepoint, levels = c("w5", "w10"))
 
-# Filter for modules that have significant results in at least one comparison
+# Calculate color scale values based on ALL data
+min_val <- min(plot_data$mean_value, na.rm = TRUE)
+max_val <- max(plot_data$mean_value, na.rm = TRUE)
+avg_val <- mean(plot_data$mean_value, na.rm = TRUE)
+
+cat("\nCLR value statistics:\n")
+cat("Min:", round(min_val, 2), "\n")
+cat("Mean:", round(avg_val, 2), "\n")
+cat("Max:", round(max_val, 2), "\n")
+
+# Count modules with significance
 significant_modules <- plot_data %>%
   filter(stars != "" & !is.na(stars)) %>%
   pull(module_name) %>%
   unique()
 
-# Filter data to only include significant modules
-plot_data_filtered <- plot_data %>%
-  filter(module_name %in% significant_modules)
+cat("\nTotal modules:", length(unique(plot_data$module_name)), "\n")
+cat("Modules with significance:", length(significant_modules), "\n")
 
-# If no significant modules, include all modules
-if(nrow(plot_data_filtered) == 0) {
-  cat("No significant modules found, including all modules...\n")
-  plot_data_filtered <- plot_data
-}
-
-# Create the enhanced heatmap
-scfa_heatmap_treatment_groups <- ggplot(plot_data_filtered, 
-                                        aes(x = treatment_group, y = module_name)) + 
+# Create the enhanced heatmap - ALL MODULES
+all_modules_heatmap <- ggplot(plot_data, 
+                              aes(x = treatment_group, y = module_name)) + 
   
   # Main heatmap tiles
-  geom_tile(aes(fill = mean_value), colour = "white", size = 1) + 
-  
-  # Color scheme for CLR transformed values
   geom_tile(aes(fill = mean_value), colour = "white", size = 0.3) + 
   
-  # Color scheme
+  # Color scheme for CLR transformed values
   scale_fill_gradientn(
     colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
                 "white", 
@@ -369,13 +370,12 @@ scfa_heatmap_treatment_groups <- ggplot(plot_data_filtered,
   
   # Labels and theming
   labs(
-    title = "SCFA Metabolic Module Abundance by Treatment Group",
+    title = "All Metabolic Module Abundance by Treatment Group",
     subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
                       "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
-                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n",
-                      "Arrows indicate direction: ↑ = increase, ↓ = decrease"),
+                      "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001"),
     x = "Treatment Group",
-    y = "SCFA Metabolic Modules"
+    y = "Metabolic Modules"
   ) + 
   
   theme_minimal(base_size = 11) +
@@ -392,7 +392,7 @@ scfa_heatmap_treatment_groups <- ggplot(plot_data_filtered,
     axis.title = element_text(size = 11, colour = "black", face = "bold"),
     axis.ticks = element_blank(),
     
-    # Facet strips (the grey boxes)
+    # Facet strips
     strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
     strip.text = element_text(size = 10, colour = "black", face = "bold",
                               margin = margin(4, 4, 4, 4)),
@@ -417,22 +417,22 @@ scfa_heatmap_treatment_groups <- ggplot(plot_data_filtered,
   )
 
 # Print the plot
-print(scfa_heatmap_treatment_groups)
+print(all_modules_heatmap)
 
 # Alternative version with custom facet labels
-plot_data_filtered$facet_label <- paste0(plot_data_filtered$sex, " - ", plot_data_filtered$timepoint)
-
-scfa_heatmap_custom_labels <- ggplot(plot_data_filtered, 
+all_modules_heatmap_custom <- ggplot(plot_data, 
                                      aes(x = treatment_group, y = module_name)) + 
   
   # Main heatmap tiles
-  geom_tile(aes(fill = mean_value), colour = "white", size = 1) + 
+  geom_tile(aes(fill = mean_value), colour = "white", size = 0.3) + 
   
   # Color scheme
   scale_fill_gradientn(
     colours = c("#2166AC", "#4393C3", "#92C5DE", "#D1E5F0", 
                 "white", 
-                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"), 
+                "#FDBF6F", "#FF7F00", "#E31A1C", "#800026"),
+    values = scales::rescale(c(min_val, min_val + (avg_val - min_val)*0.5, avg_val, 
+                               avg_val + (max_val - avg_val)*0.5, max_val)),
     name = "CLR Transformed\nAbundance",
     na.value = "grey90"
   ) +
@@ -456,12 +456,12 @@ scfa_heatmap_custom_labels <- ggplot(plot_data_filtered,
   
   # Labels and theming
   labs(
-    title = "SCFA Metabolic Module Abundance by Treatment Group",
+    title = "All Metabolic Module Abundance by Treatment Group",
     subtitle = paste0("Diet effects (black): † q≤0.2, †† q≤0.1, # q≤0.05, ## q≤0.01, ### q≤0.001\n",
                       "FOS+GOS effects (green): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001\n", 
                       "B.longum effects (orange): † q≤0.2, †† q≤0.1, ** q≤0.05, *** q≤0.01, **** q≤0.001"),
     x = "Treatment Group",
-    y = "SCFA Metabolic Modules"
+    y = "Metabolic Modules"
   ) + 
   
   theme_minimal(base_size = 11) +
@@ -478,7 +478,7 @@ scfa_heatmap_custom_labels <- ggplot(plot_data_filtered,
     axis.title = element_text(size = 11, colour = "black", face = "bold"),
     axis.ticks = element_blank(),
     
-    # Facet strips (the grey boxes)
+    # Facet strips
     strip.background = element_rect(fill = "grey85", colour = "black", size = 0.8),
     strip.text = element_text(size = 10, colour = "black", face = "bold",
                               margin = margin(4, 4, 4, 4)),
@@ -503,22 +503,33 @@ scfa_heatmap_custom_labels <- ggplot(plot_data_filtered,
   )
 
 # Print the custom labels version
-print(scfa_heatmap_custom_labels)
+print(all_modules_heatmap_custom)
 
 # Save both versions
-ggsave("/heatmap_treatment_groups_clr_scfa_modules_pups.svg", 
-       plot = scfa_heatmap_treatment_groups, 
+ggsave("/heatmap_all_modules_clr_pups.svg", 
+       plot = all_modules_heatmap, 
        width = 16, 
        height = 18,
        device = "svg",
        dpi = 300)
 
-ggsave("/heatmap_treatment_groups_custom_labels_clr_scfa_modules_pups.svg", 
-       plot = scfa_heatmap_custom_labels, 
+ggsave("heatmap_all_modules_custom_labels_clr_pups.svg", 
+       plot = all_modules_heatmap_custom, 
        width = 16, 
        height = 18,
        device = "svg",
        dpi = 300)
+
+
+cat("\n=== HEATMAP SUMMARY ===\n")
+cat("Total modules included:", length(unique(plot_data$module_name)), "\n")
+cat("Modules with significance:", length(significant_modules), "\n")
+cat("Treatment groups:", paste(levels(plot_data$treatment_group), collapse = ", "), "\n")
+cat("Sex groups:", paste(levels(plot_data$sex), collapse = ", "), "\n")
+cat("Timepoints:", paste(levels(plot_data$timepoint), collapse = ", "), "\n")
+cat("CLR value range:", paste(round(range(plot_data$mean_value, na.rm = TRUE), 2), collapse = " to "), "\n")
+
+
 
 
 # Metacyc info ---------------------------------------------------------------
