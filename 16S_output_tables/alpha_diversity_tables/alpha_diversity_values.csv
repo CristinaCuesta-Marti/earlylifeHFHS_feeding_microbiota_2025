@@ -1,0 +1,225 @@
+"Row.names","cohort","dam_cage","diet","treatment","diet_treatment","sex","age","timepoint","Sample_or_control","Chao1","se.chao1","Shannon","Simpson"
+"101w10","cohort1","105","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",246,0.0712832435640251,4.05156110007775,0.96685671699067
+"101w5","cohort1","105","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",202.111111111111,0.409646898081791,3.23851053723167,0.900890935924074
+"102w10","cohort1","105","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",176,0,3.76317195292967,0.959187160799236
+"102w5","cohort1","105","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",195.2,0.621373412717978,3.49900634697568,0.931978358827357
+"103w10","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",214,2.58577163594758,4.01632382253952,0.961201455105277
+"103w5","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",126,0.166003973518666,2.96613549335263,0.89804319477396
+"104dam","cohort1","104","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",131,0,3.4168999886273,0.91163321572354
+"104w10","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",199,0.0623427670465073,3.37891215180087,0.928493137360589
+"104w5","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",156.75,1.42313920939947,3.0758595986595,0.896957933446013
+"105dam","cohort1","105","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",237,0,4.12924623167584,0.95253199421566
+"105w10","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",193.25,1.73256823262701,3.17242337915734,0.892355834599526
+"105w5","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",169.333333333333,0.925666338648254,2.88982269565027,0.851998186708664
+"106dam","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",141,0.249111897726007,3.53980932323978,0.93218266951299
+"106w10","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",257.25,0.736606498659788,3.28003227071564,0.889254961399225
+"106w5","cohort1","105","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",148.333333333333,0.925577129476861,2.94708376488751,0.886703509583567
+"107dam","cohort1","107","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",190.5,1.29790109179956,4.0778568350218,0.956549085964549
+"109w10","cohort1","110","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",219.5,2.23179007950966,3.38569961247045,0.924192650250981
+"109w5","cohort1","110","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",172.25,0.73647933111011,3.57595411499523,0.94261642472552
+"110dam","cohort1","110","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",247.5,2.59632607561321,4.52081151777839,0.978445392418437
+"110w10","cohort1","110","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",264.142857142857,0.48692085896379,3.37358812064573,0.930454714147145
+"110w5","cohort1","110","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",229,0.249453551259163,3.96725750495018,0.955012225401104
+"111dam","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",133,0,3.19862883485859,0.89585111029289
+"113dam","cohort4","113","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",177,0.16619519000309,3.75705144212477,0.934705225862445
+"113w10","cohort1","104","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",281.75,1.42345380903307,4.18607457219641,0.972738083551857
+"113w5","cohort1","104","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",202,0.124690210180477,3.69144574692107,0.941795621218837
+"114dam","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",129,0,2.81044208420399,0.843932291793299
+"115dam","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",202,0.124690210180477,3.79303261613254,0.934091092437439
+"115w10","cohort1","104","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",127,0,3.99679221403199,0.971256903777496
+"115w5repeat","cohort1","104","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",108,0.248839900932902,3.63497639083814,0.953014175076699
+"116dam","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",233,0.249462942451684,4.31908398728948,0.971296275685391
+"116w10","cohort1","104","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",214,0.124707601938729,3.70187734587216,0.94675838057424
+"116w5","cohort1","104","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",170,7.39077326209949,3.84502643571494,0.958747871020938
+"117dam","cohort2","117","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",214,0,3.8292043879332,0.922062790079642
+"117w10","cohort1","104","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",164,0.0996946557757431,4.0259466883833,0.968207137959184
+"117w5","cohort1","104","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",124,0,3.36941666500595,0.921677922322949
+"118dam","cohort6","118","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",53,0,2.0740013193333,0.720913204743138
+"119dam","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",122,0,3.56781213625474,0.942055286990664
+"119w10","cohort1","107","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",213,0.0997649820487755,3.02927325307359,0.8380926854055
+"119w5","cohort1","107","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",109,0.248850568624199,3.30725530277602,0.904475290064502
+"120dam","cohort2","120","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",199,2.3409185157727,4.65787669568908,0.984133945325141
+"121dam","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",178.5,1.29782461815755,4.07098375465211,0.965528168891488
+"121w10","cohort1","107","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",143.75,1.42307507287686,3.47959795207355,0.933888719898966
+"121w5","cohort1","107","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",168,0.124627420929822,3.78087092299006,0.937748096085576
+"122dam","cohort2","122","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",229,0,4.00193708213801,0.93473763915761
+"122w10","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",98,0,2.58966758388332,0.829686543801267
+"122w5","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",136,0.124539593279076,3.55543265589364,0.934084843610196
+"123dam","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",193,0,4.10517101570738,0.958522158370644
+"124dam","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",133,2.33878703862281,3.35870867556712,0.918771994767072
+"124w10","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",122.5,1.29726950294274,2.80007228801291,0.831044827504491
+"124w5","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",107,0,3.6932987147107,0.946673624238605
+"125dam","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",260.5,2.59641344240773,4.80664828203944,0.985200501472166
+"125w10","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",179,0,3.47322370790805,0.924811180089047
+"125w5","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",226,0,3.66763616078139,0.926449460468019
+"126dam","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",171,2.34021541468611,3.82652843440325,0.953760174837555
+"126w10","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",124,0,3.11255780138444,0.889323647972297
+"126w5","cohort1","106","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",269,0.0831782944393582,4.14125489715259,0.951494561079916
+"127dam","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",168,0,4.46850644178336,0.980778944393775
+"128dam","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",201,4.65287585599952,4.17609276938284,0.968265757604663
+"128w10","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",164,0.166157759626238,3.69669458097324,0.950522314429525
+"128w5","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",224,0.166294226722607,3.94957732580689,0.942734160262397
+"129dam","cohort4","129","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",170,6.03984928717304,3.63063935099251,0.938714679340449
+"130dam","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",195,0,3.7888274133593,0.931047203420827
+"130w10","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",178,0.0997187054905904,3.69632449690708,0.944314515010979
+"130w5","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",206.333333333333,0.925779321846912,3.60729903849327,0.93220010780321
+"131dam","cohort6","131","Control","Vehicle","Control Vehicle","Female","dam","dam","Sample",197.125,0.443758003122969,3.76146682780522,0.926370047978213
+"131w10","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",119.333333333333,0.925402293484589,3.32370145942818,0.934461616182072
+"131w5","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",202,0,3.93435074945471,0.958011245881217
+"132w10","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",219.25,0.736561836853968,3.83656307069466,0.927524221280623
+"132w5","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",168,2.88491790572129,3.29124922704269,0.896737910748614
+"133dam","cohort6","133","HFHS","Vehicle","HFHS Vehicle","Female","dam","dam","Sample",214,1.81722604209222,4.37353712918529,0.972424589742766
+"133w10","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",132,0,3.10964713928895,0.899657342117895
+"133w5","cohort1","115","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",140,0,2.33962267226021,0.769575051493531
+"134w10","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",198,0.0997471550947442,3.77048374849787,0.949215071032271
+"134w5","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",217,4.17985623636532,4.35768180103125,0.978864987278057
+"135dam","cohort6","135","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","dam","dam","Sample",176,0,3.40547944482945,0.87592018149105
+"135w10","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",247,1.81734532755504,4.10540090353656,0.965987183827363
+"135w5","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",219.333333333333,0.925809966846732,4.15819087392339,0.971442061751635
+"136dam","cohort6","136","HFHS","FOS+GOS","HFHS FOS+GOS","Female","dam","dam","Sample",87,0.248559065808114,3.06956995560905,0.901910595818777
+"136w10","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",249.090909090909,0.358807332494285,4.05059465269414,0.961666384002384
+"136w5","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",184,0,3.58428950985827,0.924978679605869
+"137w10","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",288.333333333333,0.70024247657201,4.09763633518084,0.956638269649387
+"137w5","cohort1","111","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",113,0.248891347087172,3.10203155469176,0.890817904574249
+"201w10","cohort2","117","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",59,0,3.34559058976616,0.937620998821048
+"201w5","cohort2","117","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",130.5,1.2973779924033,3.67635362510461,0.951813497964098
+"202w10","cohort2","117","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",192,0,3.95874047058225,0.961725493776328
+"202w5","cohort2","117","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",98,0,3.51503138002854,0.944443044615754
+"204w10","cohort2","117","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",144.25,0.736404614958658,3.73882043113573,0.950222740975405
+"204w5","cohort2","117","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",149,0,3.72378288344521,0.95442779024349
+"207w10","cohort2","122","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",173.166666666667,0.543420973682691,4.00142365526769,0.96025038758529
+"207w5","cohort2","122","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",101,0.0995037190209989,3.29049088151372,0.925989698957592
+"208w10","cohort2","122","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",188,0,3.35006877026367,0.898731359064638
+"208w5","cohort2","122","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",139,0,3.45173995874707,0.923707986000917
+"209w10","cohort2","122","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",119,0.0829824545819218,3.59604066823217,0.92867320907955
+"209w5","cohort2","122","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",221.428571428571,0.912892281699098,3.60120609131253,0.932486785806785
+"211w10","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",237,0,3.97504725556252,0.955876730733297
+"211w5","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",181,0.124654217871475,3.7900428678096,0.956012023214648
+"212w10","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",276.666666666667,1.14681444323557,4.2151628120442,0.959351839965258
+"212w5","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",220,2.34132829432743,4.21715396815073,0.965830242267066
+"213w10","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",177,0.16619519000309,4.26133881373049,0.9708658258637
+"213w5","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",208.25,0.736545865798573,3.98747076925981,0.95630893381357
+"216w10","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",148,0.0996615895540124,3.69783347071299,0.946087451446608
+"216w5","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",138,0,3.01549383573718,0.85578155735057
+"217w10","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",234.25,0.736581197827184,4.08439054955805,0.964827126626398
+"217w5","cohort2","123","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",156,0.12459871485529,3.20891893351495,0.896009491630428
+"218w10","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",196.5,2.59587164904596,4.04033029352975,0.966053002979437
+"218w5","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",219,0.12471428534068,4.27685658454618,0.971463341050666
+"219w10","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",241.25,0.736589408866219,4.17542254450646,0.957845106224511
+"219w5","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",153,0.166121111465867,3.50274086208433,0.942910308168453
+"221w10","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",174,0.124640287024001,4.35006743665245,0.974212112814902
+"221w5","cohort2","121","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",208,0.166265542940294,4.01704298260271,0.96472606078128
+"223w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",131,0,3.2936323727439,0.903498764322611
+"223w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",188,0.24933421985658,3.95036862247527,0.962720055703903
+"224w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",217.1,0.381895620969294,2.99476117979045,0.853170023753468
+"224w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",239.428571428571,0.912906396844661,4.08610201239821,0.949610795307919
+"225w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",266.1,0.381909057725517,3.4234858052029,0.902965295620653
+"225w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",211,0,3.6260419413355,0.938946744879808
+"226w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",136,0,3.22018629936266,0.88917825256959
+"226w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",356,1.58091674442679,4.24034765833781,0.959031697687232
+"227w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",233,0.071275126414767,3.42932016830398,0.908199469464478
+"227w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",277.125,0.443790632252265,4.00541583991949,0.951781789994842
+"228w10","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",202,0,3.6663035817582,0.941572595571677
+"228w5","cohort2","124","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",247,0.124746706933242,4.35700867897832,0.969279570052815
+"231w10","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",171,0.0830893113355721,3.87365896147802,0.956877298758679
+"231w5","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",182.5,1.2978512273058,3.88320554545253,0.945039746714018
+"232w10","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",227.5,3.16119152664496,3.6310947602759,0.933221861800107
+"232w5","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",189,0,4.01520541154717,0.962814172188373
+"233w10","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",222,0,3.68276608472181,0.937546604811062
+"233w5","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",237,0.498944032612201,4.38735473922716,0.977706890034126
+"234w10","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",253.2,0.621427800994083,4.0072248892509,0.959842701398355
+"234w5","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",211,0,4.21333299191804,0.968335555035373
+"235w10","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",123,0.248981665828428,3.78758596032078,0.955662057221708
+"235w5","cohort2","119","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",208,0,4.17904971573788,0.961514902315575
+"236w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",167,0,3.68565630199251,0.950640367912273
+"236w5","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",216.333333333333,0.925803221910129,4.25621999084998,0.967450591902233
+"237w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",127,0,3.73574848448713,0.954361567218485
+"237w5","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",289,0,4.26784601919586,0.961718383404058
+"238w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",260.142857142857,2.53123084291771,3.99214997661061,0.961353489115397
+"238w5","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",259.25,0.736608486537951,4.23289139679912,0.962174302621677
+"239w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",245,0.249489274236757,3.57575581755819,0.918140239589683
+"239w5","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",214,0,4.15003647880823,0.965248929849463
+"241w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",281,0,3.73093756444063,0.944365822663206
+"241w5repeat","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",184,0,4.0822352066803,0.959626730455476
+"243w10","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",199.333333333333,0.925761164580438,3.63984080168417,0.93027931111973
+"243w5","cohort2","128","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",134,0,3.43139617073343,0.929168205239643
+"245w10","cohort2","120","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",113,0,3.67871329124309,0.95703981289152
+"245w5","cohort2","120","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",159,1.81691716388867,3.80091538390373,0.948260550944704
+"246w10","cohort2","120","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",188,0.08311140661886,3.98307054892952,0.964598163171985
+"246w5","cohort2","120","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",141.25,0.736394852180937,3.8044253225973,0.956216313877666
+"247w10","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",231.25,0.736577526607147,4.37330235096591,0.975126282662869
+"247w5","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",224.111111111111,0.409655933632109,3.98727020142202,0.953983818035346
+"248w10","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",221.5,1.0271581792777,3.44584192745802,0.920474149305826
+"248w5","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",168,0,4.10418529963501,0.970723627536722
+"250w10","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",212,0,4.44185694412189,0.97870923936161
+"250w5","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",138,0,3.92429186563202,0.965158198470112
+"251w10","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",311,1.81750450211814,4.54509991737722,0.979406309817579
+"251w5","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",128,0.166014348442804,3.79467385549767,0.960638475467919
+"252w10","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",259,0.0998067631044608,4.32099660091637,0.972735168274109
+"252w5","cohort2","127","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",183,0.124658002095087,3.95743035535227,0.964696428113732
+"302w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",237.857142857143,1.39513618112988,3.52826564091275,0.921676968152009
+"302w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",219,0.24942857068136,3.72207120685663,0.933814275447445
+"303w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",278.75,1.2556769212458,4.41353170123312,0.976342456392871
+"303w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",229.6,1.18609936654442,4.02760293806761,0.955754680019143
+"304w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",266.333333333333,4.12774431743047,4.32346964913475,0.971549648733709
+"304w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",162,0.166151467082651,3.69693420869824,0.937926204673063
+"305w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",161,5.53877728657036,2.83315833983394,0.799093650728751
+"305w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",168.25,0.736470180335247,3.94166312999352,0.956068043782643
+"306w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",213.375,0.826493900516615,4.02416266467573,0.96423053870577
+"306w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",198.5,2.59589387059748,4.23650497372297,0.971766667106109
+"308w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",188,0,3.85097888941917,0.956044929867939
+"308w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",151,0,3.11775392830803,0.902128979901147
+"310w10","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",164,0.166157759626238,4.07578363451006,0.967742121582064
+"310w5","cohort3","125","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",133.75,1.42301725070162,2.58610763923086,0.78652031375215
+"311w10pos","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 10","Sample",142,0.1245590815185,3.35378201529341,0.901374278923047
+"311w5","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Female","pup","week 5","Sample",177.111111111111,0.409633905328423,3.3266712890213,0.899881689598713
+"312w10","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",123,0,3.38886511331894,0.912827484543108
+"312w5","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",155,0,3.2938420332162,0.902243832707933
+"314w10","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",109,0,3.50323150968398,0.924688409453719
+"314w5","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",156,0,3.11043619521699,0.885950257281309
+"315w10","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 10","Sample",135,0.0996289412064884,3.73683829926238,0.939521755229382
+"315w5","cohort3","114","HFHS","FOS+GOS","HFHS FOS+GOS","Male","pup","week 5","Sample",142,0,2.99724492514201,0.869273276123593
+"401w10","cohort4","129","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",203,0,4.41662581298921,0.977892393814513
+"401w5","cohort4","129","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",265.2,0.62143608314119,4.58441180324908,0.978281699591186
+"402w10","cohort4","129","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",197.5,1.02712850590917,4.0114130105772,0.959836208083683
+"402w5","cohort4","129","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",284,0,4.62203525859671,0.982225870503807
+"405w10","cohort4","129","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",208,0.0997593257641764,3.97460568186897,0.957039371571646
+"405w5","cohort4","129","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",154,0.0996747958867483,3.05702751134331,0.873833824184405
+"407w10","cohort4","129","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",278.2,1.8409040382186,4.65062322919313,0.980895402479024
+"407w5","cohort4","129","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",136,0.498158373116304,3.15616408660306,0.875558568050398
+"408w10","cohort4","113","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",224,0.0831471133613035,4.22355621196139,0.963886111071926
+"408w5","cohort4","113","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",186,0,3.42638704754759,0.926631259461278
+"409w10","cohort4","113","Control","Vehicle","Control Vehicle","Female","pup","week 10","Sample",318.25,1.73269710747464,4.04909327339008,0.957071699119958
+"409w5","cohort4","113","Control","Vehicle","Control Vehicle","Female","pup","week 5","Sample",233,0.071275126414767,4.46164429378625,0.978284053255275
+"412w10","cohort4","113","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",320.2,1.84095649038762,4.0662897147634,0.960113702770196
+"412w5","cohort4","113","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",273.6,1.18615145034599,3.84827242187331,0.93538556102593
+"413w10","cohort4","113","Control","Vehicle","Control Vehicle","Male","pup","week 10","Sample",247.5,1.02718383056456,4.16667371962864,0.958998752894851
+"413w5","cohort4","113","Control","Vehicle","Control Vehicle","Male","pup","week 5","Sample",185,0.0997293635091789,3.34187674664023,0.918595934634488
+"419w10","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",156,0.166131619807053,3.65152556215841,0.941445998849602
+"419w5","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",199,0.0831236893953431,3.87645641281803,0.94904020875648
+"420w10","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",244.2,0.62142105513422,4.36852402676914,0.975464077388562
+"420w5","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",289,0,4.2712106787436,0.966833365742909
+"421w10","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 10","Sample",207,0,4.28198143092758,0.966888586207728
+"421w5","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Female","pup","week 5","Sample",195,0.1662387669448,3.92221269043854,0.948733480396282
+"422w10","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",175.333333333333,4.1268517384997,4.05731674049768,0.960359246028903
+"422w5repeat","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",146,0,3.93183138988352,0.966550025881176
+"423w10","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 10","Sample",279.111111111111,0.409672290276877,3.76131324959764,0.943756240759004
+"423w5","cohort4","126","HFHS","Vehicle","HFHS Vehicle","Male","pup","week 5","Sample",204.5,1.0271378801986,4.01415222605029,0.955707691262816
+"435w10","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",229.166666666667,0.543470061910536,3.87001330318009,0.954728836182711
+"435w5","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",262.142857142857,0.486920068370931,4.43688517430637,0.97414354227343
+"436w10","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",198,0.12468394386843,3.44173060014445,0.924679378045838
+"436w5","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",241.2,0.621418694625331,4.33519039017987,0.975848555683031
+"438w10","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",261,0,3.95909450964602,0.961055951137481
+"438w5","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",171,0.498535868013432,3.43503434527149,0.909030784158587
+"439w10","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",177,0.124646392502318,3.76571737713365,0.955104008884604
+"439w5","cohort4","116","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",155,0,3.3322834376922,0.87833354724725
+"501w10","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",226.428571428571,0.912896427705606,3.65546334540054,0.939087160378627
+"501w5","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",190.166666666667,0.543438932086828,3.74386452509341,0.943513109756098
+"503w10","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 10","Sample",201,0.498754668053816,3.33988833675139,0.904174672630478
+"503w5","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Female","pup","week 5","Sample",207,5.53966325948146,3.95221909160881,0.959772188534634
+"506w10","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",254,0,3.74311013133436,0.942300510156742
+"506w5","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",196.25,0.736526400433163,3.84228908869777,0.942720877789059
+"507w10","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",177,0,4.29863256683118,0.97202841873068
+"507w5","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",153,0,3.94191274286611,0.96000590880328
+"508w10","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 10","Sample",114.5,2.59429168463729,3.52514340698875,0.927454073518822
+"508w5","cohort5","130","HFHS","B. longum APC1472","HFHS B. longum APC1472","Male","pup","week 5","Sample",149,2.33947736950288,4.02641719341618,0.966877516057721

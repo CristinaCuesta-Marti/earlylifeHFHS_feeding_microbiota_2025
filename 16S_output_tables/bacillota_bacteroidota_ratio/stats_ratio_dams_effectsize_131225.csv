@@ -1,0 +1,7 @@
+".y..x","group1","group2","n1.x","n2.x","statistic","p","p.adj","p.adj.signif","group_comparison","formatted_p_value",".y..y","effsize","n1.y","n2.y","magnitude"
+"ratio_dams","Control Vehicle","HFHS Vehicle",7,7,6,0.018,0.026,"*","Control Vehicle vs HFHS Vehicle","2.60e-02","ratio_dams",0.631763693505322,7,7,"large"
+"ratio_dams","Control Vehicle","HFHS FOS+GOS",7,7,43,0.018,0.026,"*","Control Vehicle vs HFHS FOS+GOS","2.60e-02","ratio_dams",0.631763693505322,7,7,"large"
+"ratio_dams","Control Vehicle","HFHS B. longum APC1472",7,7,8,0.038,0.045,"*","Control Vehicle vs HFHS B. longum APC1472","4.50e-02","ratio_dams",0.563464915829071,7,7,"large"
+"ratio_dams","HFHS Vehicle","HFHS FOS+GOS",7,7,48,0.001,0.004,"**","HFHS Vehicle vs HFHS FOS+GOS","4.00e-03","ratio_dams",0.80251063769595,7,7,"large"
+"ratio_dams","HFHS Vehicle","HFHS B. longum APC1472",7,7,27,0.805,0.805,"ns","HFHS Vehicle vs HFHS B. longum APC1472","8.05e-01","ratio_dams",0.0853734720953138,7,7,"small"
+"ratio_dams","HFHS FOS+GOS","HFHS B. longum APC1472",7,7,1,0.001,0.004,"**","HFHS FOS+GOS vs HFHS B. longum APC1472","4.00e-03","ratio_dams",0.80251063769595,7,7,"large"

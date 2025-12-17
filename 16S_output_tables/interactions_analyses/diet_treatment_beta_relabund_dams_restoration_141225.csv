@@ -1,0 +1,2 @@
+"statistic_diet","p.adj_diet","conf.low_diet","conf.high_diet","R2_marginal_diet","R2_conditional_diet","effect_size_diet","statistic_treatment_FOSGOS","p.adj_treatment_FOSGOS","statistic_treatment_1472","p.adj_treatment_1472","restoration_FOSGOS","restoration_1472"
+5.40276899008701,0.000318735145435957,-0.161526922673188,0.0358062705927207,0.914486581113583,NA,-1.33849396798469,-13.2814391741803,2.90775885425898e-10,-1.33849396798469,0.19739777488655,"restored","not restored"
